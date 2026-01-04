@@ -3,8 +3,106 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-const APP_NAME: &str = "bitbucket";
+const APP_NAME: &str = "bitbucket-cli";
 const CONFIG_FILE: &str = "config.toml";
+
+/// XDG Base Directory helper functions
+/// 
+/// On Linux, these follow the XDG Base Directory Specification:
+/// - Config: `$XDG_CONFIG_HOME/bitbucket-cli` (default: `~/.config/bitbucket-cli`)
+/// - Data: `$XDG_DATA_HOME/bitbucket-cli` (default: `~/.local/share/bitbucket-cli`)
+/// - Cache: `$XDG_CACHE_HOME/bitbucket-cli` (default: `~/.cache/bitbucket-cli`)
+/// - State: `$XDG_STATE_HOME/bitbucket-cli` (default: `~/.local/state/bitbucket-cli`)
+///
+/// On macOS:
+/// - Config: `~/Library/Application Support/bitbucket-cli`
+/// - Data: `~/Library/Application Support/bitbucket-cli`
+/// - Cache: `~/Library/Caches/bitbucket-cli`
+///
+/// On Windows:
+/// - Config: `%APPDATA%\bitbucket-cli`
+/// - Data: `%APPDATA%\bitbucket-cli`
+/// - Cache: `%LOCALAPPDATA%\bitbucket-cli`
+pub mod xdg {
+    use super::*;
+
+    /// Get the XDG config directory for the application
+    /// 
+    /// Respects `$XDG_CONFIG_HOME` on Linux (falls back to `~/.config`)
+    pub fn config_dir() -> Result<PathBuf> {
+        // First check for explicit XDG_CONFIG_HOME on Unix
+        #[cfg(unix)]
+        if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
+            if !xdg_config.is_empty() {
+                return Ok(PathBuf::from(xdg_config).join(APP_NAME));
+            }
+        }
+        
+        dirs::config_dir()
+            .map(|p| p.join(APP_NAME))
+            .context("Could not determine config directory")
+    }
+
+    /// Get the XDG data directory for the application
+    /// 
+    /// Respects `$XDG_DATA_HOME` on Linux (falls back to `~/.local/share`)
+    pub fn data_dir() -> Result<PathBuf> {
+        #[cfg(unix)]
+        if let Ok(xdg_data) = std::env::var("XDG_DATA_HOME") {
+            if !xdg_data.is_empty() {
+                return Ok(PathBuf::from(xdg_data).join(APP_NAME));
+            }
+        }
+        
+        dirs::data_dir()
+            .map(|p| p.join(APP_NAME))
+            .context("Could not determine data directory")
+    }
+
+    /// Get the XDG cache directory for the application
+    /// 
+    /// Respects `$XDG_CACHE_HOME` on Linux (falls back to `~/.cache`)
+    pub fn cache_dir() -> Result<PathBuf> {
+        #[cfg(unix)]
+        if let Ok(xdg_cache) = std::env::var("XDG_CACHE_HOME") {
+            if !xdg_cache.is_empty() {
+                return Ok(PathBuf::from(xdg_cache).join(APP_NAME));
+            }
+        }
+        
+        dirs::cache_dir()
+            .map(|p| p.join(APP_NAME))
+            .context("Could not determine cache directory")
+    }
+
+    /// Get the XDG state directory for the application
+    /// 
+    /// Respects `$XDG_STATE_HOME` on Linux (falls back to `~/.local/state`)
+    /// On non-Linux platforms, falls back to data directory
+    pub fn state_dir() -> Result<PathBuf> {
+        #[cfg(unix)]
+        if let Ok(xdg_state) = std::env::var("XDG_STATE_HOME") {
+            if !xdg_state.is_empty() {
+                return Ok(PathBuf::from(xdg_state).join(APP_NAME));
+            }
+        }
+        
+        // dirs::state_dir() is available on Linux, falls back to data_dir on other platforms
+        dirs::state_dir()
+            .or_else(dirs::data_dir)
+            .map(|p| p.join(APP_NAME))
+            .context("Could not determine state directory")
+    }
+
+    /// Ensure a directory exists, creating it if necessary
+    pub fn ensure_dir(path: &PathBuf) -> Result<()> {
+        if !path.exists() {
+            fs::create_dir_all(path)
+                .with_context(|| format!("Failed to create directory: {:?}", path))?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
@@ -57,17 +155,41 @@ impl Default for DisplayConfig {
 }
 
 impl Config {
-    /// Get the configuration directory path
+    /// Get the configuration directory path (XDG compliant)
+    /// 
+    /// Returns `$XDG_CONFIG_HOME/bitbucket-cli` on Linux,
+    /// or platform-appropriate equivalent on other systems.
     pub fn config_dir() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir()
-            .context("Could not find config directory")?
-            .join(APP_NAME);
-        Ok(config_dir)
+        xdg::config_dir()
     }
 
     /// Get the configuration file path
     pub fn config_path() -> Result<PathBuf> {
         Ok(Self::config_dir()?.join(CONFIG_FILE))
+    }
+
+    /// Get the data directory path (XDG compliant)
+    /// 
+    /// Returns `$XDG_DATA_HOME/bitbucket-cli` on Linux.
+    /// Use this for persistent application data.
+    pub fn data_dir() -> Result<PathBuf> {
+        xdg::data_dir()
+    }
+
+    /// Get the cache directory path (XDG compliant)
+    /// 
+    /// Returns `$XDG_CACHE_HOME/bitbucket-cli` on Linux.
+    /// Use this for cached data that can be regenerated.
+    pub fn cache_dir() -> Result<PathBuf> {
+        xdg::cache_dir()
+    }
+
+    /// Get the state directory path (XDG compliant)
+    /// 
+    /// Returns `$XDG_STATE_HOME/bitbucket-cli` on Linux.
+    /// Use this for state data like logs and history.
+    pub fn state_dir() -> Result<PathBuf> {
+        xdg::state_dir()
     }
 
     /// Load configuration from file, or create default if it doesn't exist
@@ -92,11 +214,8 @@ impl Config {
         let config_dir = Self::config_dir()?;
         let config_path = Self::config_path()?;
 
-        // Create config directory if it doesn't exist
-        if !config_dir.exists() {
-            fs::create_dir_all(&config_dir)
-                .with_context(|| format!("Failed to create config directory: {:?}", config_dir))?;
-        }
+        // Create config directory if it doesn't exist (XDG compliant)
+        xdg::ensure_dir(&config_dir)?;
 
         let contents = toml::to_string_pretty(self).context("Failed to serialize config")?;
 
@@ -150,5 +269,44 @@ mod tests {
         let serialized = toml::to_string(&config).unwrap();
         let deserialized: Config = toml::from_str(&serialized).unwrap();
         assert_eq!(config.display.color, deserialized.display.color);
+    }
+
+    #[test]
+    fn test_xdg_directories() {
+        // These should not panic and should return valid paths
+        let config_dir = xdg::config_dir().unwrap();
+        let data_dir = xdg::data_dir().unwrap();
+        let cache_dir = xdg::cache_dir().unwrap();
+        let state_dir = xdg::state_dir().unwrap();
+
+        // All paths should end with our app name
+        assert!(config_dir.ends_with("bitbucket-cli"));
+        assert!(data_dir.ends_with("bitbucket-cli"));
+        assert!(cache_dir.ends_with("bitbucket-cli"));
+        assert!(state_dir.ends_with("bitbucket-cli"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_xdg_env_override() {
+        use std::env;
+
+        // Save original values
+        let orig_config = env::var("XDG_CONFIG_HOME").ok();
+
+        // Set custom XDG_CONFIG_HOME
+        env::set_var("XDG_CONFIG_HOME", "/tmp/test-xdg-config");
+
+        let config_dir = xdg::config_dir().unwrap();
+        assert_eq!(
+            config_dir,
+            PathBuf::from("/tmp/test-xdg-config/bitbucket-cli")
+        );
+
+        // Restore original value
+        match orig_config {
+            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+            None => env::remove_var("XDG_CONFIG_HOME"),
+        }
     }
 }
