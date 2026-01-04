@@ -34,7 +34,12 @@ impl DashboardView {
             Some(ws) => vec![
                 Line::from(vec![
                     Span::styled("Workspace: ", Style::default().fg(Color::DarkGray)),
-                    Span::styled(ws, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        ws,
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                 ]),
                 Line::from(""),
                 Line::from(Span::styled(
@@ -55,8 +60,11 @@ impl DashboardView {
             ],
         };
 
-        let header = Paragraph::new(workspace_info)
-            .block(Block::default().borders(Borders::ALL).title(" 🌐 Bitbucket "));
+        let header = Paragraph::new(workspace_info).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" 🌐 Bitbucket "),
+        );
         f.render_widget(header, area);
     }
 
@@ -79,7 +87,10 @@ impl DashboardView {
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
             )),
-            Line::from(Span::styled("Repositories", Style::default().fg(Color::DarkGray))),
+            Line::from(Span::styled(
+                "Repositories",
+                Style::default().fg(Color::DarkGray),
+            )),
         ])
         .block(Block::default().borders(Borders::ALL).title(" 📁 "));
         f.render_widget(repos_stat, stats_layout[0]);
@@ -97,7 +108,10 @@ impl DashboardView {
                     .fg(Color::Green)
                     .add_modifier(Modifier::BOLD),
             )),
-            Line::from(Span::styled("Open PRs", Style::default().fg(Color::DarkGray))),
+            Line::from(Span::styled(
+                "Open PRs",
+                Style::default().fg(Color::DarkGray),
+            )),
         ])
         .block(Block::default().borders(Borders::ALL).title(" 🔀 "));
         f.render_widget(prs_stat, stats_layout[1]);
@@ -106,7 +120,10 @@ impl DashboardView {
         let open_issues = app
             .issues
             .iter()
-            .filter(|i| i.state == crate::models::IssueState::Open || i.state == crate::models::IssueState::New)
+            .filter(|i| {
+                i.state == crate::models::IssueState::Open
+                    || i.state == crate::models::IssueState::New
+            })
             .count();
         let issues_stat = Paragraph::new(vec![
             Line::from(Span::styled(
@@ -115,7 +132,10 @@ impl DashboardView {
                     .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD),
             )),
-            Line::from(Span::styled("Open Issues", Style::default().fg(Color::DarkGray))),
+            Line::from(Span::styled(
+                "Open Issues",
+                Style::default().fg(Color::DarkGray),
+            )),
         ])
         .block(Block::default().borders(Borders::ALL).title(" 🐛 "));
         f.render_widget(issues_stat, stats_layout[2]);
@@ -133,7 +153,10 @@ impl DashboardView {
                     .fg(Color::Blue)
                     .add_modifier(Modifier::BOLD),
             )),
-            Line::from(Span::styled("Running", Style::default().fg(Color::DarkGray))),
+            Line::from(Span::styled(
+                "Running",
+                Style::default().fg(Color::DarkGray),
+            )),
         ])
         .block(Block::default().borders(Borders::ALL).title(" ⚙️ "));
         f.render_widget(pipelines_stat, stats_layout[3]);
@@ -143,28 +166,50 @@ impl DashboardView {
         let items: Vec<ListItem> = vec![
             ListItem::new(Line::from(vec![
                 Span::styled("📁 ", Style::default()),
-                Span::styled("Repositories", Style::default().add_modifier(Modifier::BOLD)),
-                Span::styled(" - Browse and manage repositories", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    "Repositories",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    " - Browse and manage repositories",
+                    Style::default().fg(Color::DarkGray),
+                ),
             ])),
             ListItem::new(Line::from(vec![
                 Span::styled("🔀 ", Style::default()),
-                Span::styled("Pull Requests", Style::default().add_modifier(Modifier::BOLD)),
-                Span::styled(" - Review and merge code", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    "Pull Requests",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    " - Review and merge code",
+                    Style::default().fg(Color::DarkGray),
+                ),
             ])),
             ListItem::new(Line::from(vec![
                 Span::styled("🐛 ", Style::default()),
                 Span::styled("Issues", Style::default().add_modifier(Modifier::BOLD)),
-                Span::styled(" - Track bugs and tasks", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    " - Track bugs and tasks",
+                    Style::default().fg(Color::DarkGray),
+                ),
             ])),
             ListItem::new(Line::from(vec![
                 Span::styled("⚙️  ", Style::default()),
                 Span::styled("Pipelines", Style::default().add_modifier(Modifier::BOLD)),
-                Span::styled(" - Monitor CI/CD builds", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    " - Monitor CI/CD builds",
+                    Style::default().fg(Color::DarkGray),
+                ),
             ])),
         ];
 
         let list = List::new(items)
-            .block(Block::default().borders(Borders::ALL).title(" Quick Access "))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Quick Access "),
+            )
             .highlight_style(
                 Style::default()
                     .bg(Color::DarkGray)

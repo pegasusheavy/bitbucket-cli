@@ -241,12 +241,7 @@ impl PrCommands {
                     anyhow::bail!("Could not find PR URL");
                 }
 
-                println!(
-                    "{} {} #{}",
-                    format_state(&pr.state),
-                    pr.title.bold(),
-                    pr.id
-                );
+                println!("{} {} #{}", format_state(&pr.state), pr.title.bold(), pr.id);
                 println!("{}", "─".repeat(60));
 
                 println!(
@@ -256,8 +251,16 @@ impl PrCommands {
                     pr.destination.branch.name.green()
                 );
                 println!("{} {}", "Author:".dimmed(), pr.author.display_name);
-                println!("{} {}", "Created:".dimmed(), pr.created_on.format("%Y-%m-%d %H:%M"));
-                println!("{} {}", "Updated:".dimmed(), pr.updated_on.format("%Y-%m-%d %H:%M"));
+                println!(
+                    "{} {}",
+                    "Created:".dimmed(),
+                    pr.created_on.format("%Y-%m-%d %H:%M")
+                );
+                println!(
+                    "{} {}",
+                    "Updated:".dimmed(),
+                    pr.updated_on.format("%Y-%m-%d %H:%M")
+                );
 
                 if let Some(count) = pr.comment_count {
                     println!("{} {}", "Comments:".dimmed(), count);
@@ -278,7 +281,11 @@ impl PrCommands {
                         .collect();
 
                     if !approvals.is_empty() {
-                        println!("{} {}", "Approved by:".dimmed(), approvals.join(", ").green());
+                        println!(
+                            "{} {}",
+                            "Approved by:".dimmed(),
+                            approvals.join(", ").green()
+                        );
                     }
                 }
 

@@ -71,9 +71,12 @@ impl ReposView {
     fn render_details(f: &mut Frame, app: &App, area: Rect) {
         let content = if let Some(repo) = app.repositories.get(app.view_state.selected_index) {
             vec![
-                Line::from(vec![
-                    Span::styled(&repo.full_name, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-                ]),
+                Line::from(vec![Span::styled(
+                    &repo.full_name,
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                )]),
                 Line::from(""),
                 Line::from(vec![
                     Span::styled("Description: ", Style::default().fg(Color::DarkGray)),
@@ -95,16 +98,29 @@ impl ReposView {
                 Line::from(""),
                 Line::from(vec![
                     Span::styled("Main branch: ", Style::default().fg(Color::DarkGray)),
-                    Span::raw(repo.mainbranch.as_ref().map(|b| b.name.as_str()).unwrap_or("main")),
+                    Span::raw(
+                        repo.mainbranch
+                            .as_ref()
+                            .map(|b| b.name.as_str())
+                            .unwrap_or("main"),
+                    ),
                 ]),
                 Line::from(""),
                 Line::from(vec![
                     Span::styled("Created: ", Style::default().fg(Color::DarkGray)),
-                    Span::raw(repo.created_on.map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default()),
+                    Span::raw(
+                        repo.created_on
+                            .map(|d| d.format("%Y-%m-%d").to_string())
+                            .unwrap_or_default(),
+                    ),
                 ]),
                 Line::from(vec![
                     Span::styled("Updated: ", Style::default().fg(Color::DarkGray)),
-                    Span::raw(repo.updated_on.map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default()),
+                    Span::raw(
+                        repo.updated_on
+                            .map(|d| d.format("%Y-%m-%d").to_string())
+                            .unwrap_or_default(),
+                    ),
                 ]),
             ]
         } else {
@@ -127,7 +143,10 @@ impl ReposView {
             Span::raw(format!("{} ", private_badge)),
             Span::styled(repo.full_name.clone(), Style::default().fg(Color::Cyan)),
             if !lang_badge.is_empty() {
-                Span::styled(format!(" [{}]", lang_badge), Style::default().fg(Color::Yellow))
+                Span::styled(
+                    format!(" [{}]", lang_badge),
+                    Style::default().fg(Color::Yellow),
+                )
             } else {
                 Span::raw("")
             },

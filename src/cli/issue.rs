@@ -237,7 +237,11 @@ impl IssueCommands {
                 println!("{}", "─".repeat(60));
 
                 println!("{} {}", "Kind:".dimmed(), issue.kind);
-                println!("{} {}", "Priority:".dimmed(), format_priority(&issue.priority));
+                println!(
+                    "{} {}",
+                    "Priority:".dimmed(),
+                    format_priority(&issue.priority)
+                );
 
                 if let Some(reporter) = &issue.reporter {
                     println!("{} {}", "Reporter:".dimmed(), reporter.display_name);
@@ -254,7 +258,11 @@ impl IssueCommands {
                 );
 
                 if let Some(updated) = issue.updated_on {
-                    println!("{} {}", "Updated:".dimmed(), updated.format("%Y-%m-%d %H:%M"));
+                    println!(
+                        "{} {}",
+                        "Updated:".dimmed(),
+                        updated.format("%Y-%m-%d %H:%M")
+                    );
                 }
 
                 if let Some(votes) = issue.votes {
@@ -303,7 +311,9 @@ impl IssueCommands {
                     version: None,
                 };
 
-                let issue = client.create_issue(&workspace, &repo_slug, &request).await?;
+                let issue = client
+                    .create_issue(&workspace, &repo_slug, &request)
+                    .await?;
 
                 println!("{} Created issue #{}", "✓".green(), issue.id);
 
@@ -334,7 +344,14 @@ impl IssueCommands {
                 let client = BitbucketClient::from_stored()?;
 
                 client
-                    .update_issue(&workspace, &repo_slug, id, None, None, Some(IssueState::Closed))
+                    .update_issue(
+                        &workspace,
+                        &repo_slug,
+                        id,
+                        None,
+                        None,
+                        Some(IssueState::Closed),
+                    )
                     .await?;
 
                 println!("{} Closed issue #{}", "✓".green(), id);
@@ -347,7 +364,14 @@ impl IssueCommands {
                 let client = BitbucketClient::from_stored()?;
 
                 client
-                    .update_issue(&workspace, &repo_slug, id, None, None, Some(IssueState::Open))
+                    .update_issue(
+                        &workspace,
+                        &repo_slug,
+                        id,
+                        None,
+                        None,
+                        Some(IssueState::Open),
+                    )
                     .await?;
 
                 println!("{} Reopened issue #{}", "✓".green(), id);

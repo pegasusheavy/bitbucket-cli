@@ -101,7 +101,9 @@ impl RepoCommands {
         match self {
             RepoCommands::List { workspace, limit } => {
                 let client = BitbucketClient::from_stored()?;
-                let repos = client.list_repositories(&workspace, None, Some(limit)).await?;
+                let repos = client
+                    .list_repositories(&workspace, None, Some(limit))
+                    .await?;
 
                 if repos.values.is_empty() {
                     println!("No repositories found in workspace '{}'", workspace);
@@ -263,9 +265,15 @@ impl RepoCommands {
                     ..Default::default()
                 };
 
-                let repository = client.create_repository(&workspace, &slug, &request).await?;
+                let repository = client
+                    .create_repository(&workspace, &slug, &request)
+                    .await?;
 
-                println!("{} Created repository {}", "✓".green(), repository.full_name.cyan());
+                println!(
+                    "{} Created repository {}",
+                    "✓".green(),
+                    repository.full_name.cyan()
+                );
 
                 if let Some(links) = &repository.links {
                     if let Some(html) = &links.html {
@@ -285,7 +293,12 @@ impl RepoCommands {
                 let client = BitbucketClient::from_stored()?;
 
                 let forked = client
-                    .fork_repository(&src_workspace, &src_repo, workspace.as_deref(), name.as_deref())
+                    .fork_repository(
+                        &src_workspace,
+                        &src_repo,
+                        workspace.as_deref(),
+                        name.as_deref(),
+                    )
                     .await?;
 
                 println!("{} Forked to {}", "✓".green(), forked.full_name.cyan());

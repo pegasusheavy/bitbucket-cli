@@ -106,7 +106,10 @@ impl PipelineCommands {
 
                         PipelineRow {
                             build: p.build_number,
-                            status: format_status(&p.state.name, p.state.result.as_ref().map(|r| &r.name)),
+                            status: format_status(
+                                &p.state.name,
+                                p.state.result.as_ref().map(|r| &r.name),
+                            ),
                             branch: p.target.ref_name.clone().unwrap_or_else(|| "-".to_string()),
                             triggered: p.created_on.format("%Y-%m-%d %H:%M").to_string(),
                             duration,
@@ -130,7 +133,10 @@ impl PipelineCommands {
 
                 println!(
                     "{} Pipeline #{} - {}",
-                    format_status(&pipeline.state.name, pipeline.state.result.as_ref().map(|r| &r.name)),
+                    format_status(
+                        &pipeline.state.name,
+                        pipeline.state.result.as_ref().map(|r| &r.name)
+                    ),
                     pipeline.build_number,
                     pipeline.target.ref_name.as_deref().unwrap_or("unknown")
                 );

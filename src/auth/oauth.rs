@@ -2,8 +2,8 @@ use anyhow::{Context, Result};
 use oauth2::basic::BasicClient;
 use oauth2::reqwest::async_http_client;
 use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge,
-    RedirectUrl, Scope, TokenResponse, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl,
+    Scope, TokenResponse, TokenUrl,
 };
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
@@ -34,7 +34,8 @@ impl OAuthFlow {
         println!();
 
         // Find an available port for the callback server
-        let listener = TcpListener::bind("127.0.0.1:0").context("Failed to bind callback server")?;
+        let listener =
+            TcpListener::bind("127.0.0.1:0").context("Failed to bind callback server")?;
         let port = listener.local_addr()?.port();
         let redirect_url = format!("http://127.0.0.1:{}/callback", port);
 
@@ -89,10 +90,12 @@ impl OAuthFlow {
             .context("Failed to exchange authorization code for token")?;
 
         let access_token = token_response.access_token().secret().to_string();
-        let refresh_token = token_response.refresh_token().map(|t| t.secret().to_string());
-        let expires_at = token_response.expires_in().map(|d| {
-            chrono::Utc::now().timestamp() + d.as_secs() as i64
-        });
+        let refresh_token = token_response
+            .refresh_token()
+            .map(|t| t.secret().to_string());
+        let expires_at = token_response
+            .expires_in()
+            .map(|d| chrono::Utc::now().timestamp() + d.as_secs() as i64);
 
         let credential = Credential::OAuth {
             access_token,
@@ -109,44 +112,53 @@ impl OAuthFlow {
     }
 
     /// Wait for the OAuth callback and extract the authorization code
-    fn wait_for_callback(listener: TcpListener, expected_csrf: CsrfToken) -> Result<AuthorizationCode> {
+    fn wait_for_callback(
+        listener: TcpListener,
+        expected_csrf: CsrfToken,
+    ) -> Result<AuthorizationCode> {
         for stream in listener.incoming() {
-            if let Ok(mut stream) = stream {
-                let mut reader = BufReader::new(&stream);
-                let mut request_line = String::new();
-                reader.read_line(&mut request_line)?;
+            let mut stream = match stream {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
 
-                // Parse the request URL
-                let redirect_url = request_line
-                    .split_whitespace()
-                    .nth(1)
-                    .context("Invalid HTTP request")?;
+            let mut reader = BufReader::new(&stream);
+            let mut request_line = String::new();
+            if reader.read_line(&mut request_line).is_err() {
+                continue;
+            }
 
-                let url = url::Url::parse(&format!("http://localhost{}", redirect_url))
-                    .context("Failed to parse callback URL")?;
+            // Parse the request URL
+            let Some(redirect_url) = request_line.split_whitespace().nth(1) else {
+                continue;
+            };
 
-                let mut code = None;
-                let mut state = None;
+            let Ok(url) = url::Url::parse(&format!("http://localhost{}", redirect_url)) else {
+                continue;
+            };
 
-                for (key, value) in url.query_pairs() {
-                    match key.as_ref() {
-                        "code" => code = Some(AuthorizationCode::new(value.to_string())),
-                        "state" => state = Some(CsrfToken::new(value.to_string())),
-                        _ => {}
-                    }
+            let mut code = None;
+            let mut state = None;
+
+            for (key, value) in url.query_pairs() {
+                match key.as_ref() {
+                    "code" => code = Some(AuthorizationCode::new(value.to_string())),
+                    "state" => state = Some(CsrfToken::new(value.to_string())),
+                    _ => {}
                 }
+            }
 
-                // Verify CSRF token
-                if let Some(ref state) = state {
-                    if state.secret() != expected_csrf.secret() {
-                        let response = "HTTP/1.1 400 Bad Request\r\n\r\nCSRF token mismatch";
-                        stream.write_all(response.as_bytes())?;
-                        anyhow::bail!("CSRF token mismatch");
-                    }
+            // Verify CSRF token
+            if let Some(ref state) = state {
+                if state.secret() != expected_csrf.secret() {
+                    let response = "HTTP/1.1 400 Bad Request\r\n\r\nCSRF token mismatch";
+                    let _ = stream.write_all(response.as_bytes());
+                    continue;
                 }
+            }
 
-                // Send success response
-                let response = r#"HTTP/1.1 200 OK
+            // Send success response
+            let response = r#"HTTP/1.1 200 OK
 Content-Type: text/html
 
 <!DOCTYPE html>
@@ -157,13 +169,10 @@ Content-Type: text/html
 <p>You can close this window and return to the terminal.</p>
 </body>
 </html>"#;
-                stream.write_all(response.as_bytes())?;
+            let _ = stream.write_all(response.as_bytes());
 
-                if let Some(code) = code {
-                    return Ok(code);
-                } else {
-                    anyhow::bail!("No authorization code in callback");
-                }
+            if let Some(code) = code {
+                return Ok(code);
             }
         }
 
@@ -194,9 +203,9 @@ Content-Type: text/html
             .refresh_token()
             .map(|t| t.secret().to_string())
             .unwrap_or_else(|| refresh_token.to_string());
-        let expires_at = token_response.expires_in().map(|d| {
-            chrono::Utc::now().timestamp() + d.as_secs() as i64
-        });
+        let expires_at = token_response
+            .expires_in()
+            .map(|d| chrono::Utc::now().timestamp() + d.as_secs() as i64);
 
         let credential = Credential::OAuth {
             access_token,

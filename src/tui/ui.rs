@@ -65,10 +65,7 @@ fn draw_main(f: &mut Frame, app: &App, area: Rect) {
 fn draw_dashboard(f: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Min(0),
-        ])
+        .constraints([Constraint::Length(3), Constraint::Min(0)])
         .split(area);
 
     // Workspace info
@@ -117,7 +114,11 @@ fn draw_dashboard(f: &mut Frame, app: &App, area: Rect) {
     ];
 
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title(" Quick Access "))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Quick Access "),
+        )
         .highlight_style(
             Style::default()
                 .bg(Color::DarkGray)
@@ -132,7 +133,9 @@ fn draw_dashboard(f: &mut Frame, app: &App, area: Rect) {
 
 fn draw_repositories(f: &mut Frame, app: &App, area: Rect) {
     let items: Vec<ListItem> = if app.repositories.is_empty() {
-        vec![ListItem::new("No repositories loaded. Press 'r' to refresh.")]
+        vec![ListItem::new(
+            "No repositories loaded. Press 'r' to refresh.",
+        )]
     } else {
         app.repositories
             .iter()
@@ -171,7 +174,9 @@ fn draw_repositories(f: &mut Frame, app: &App, area: Rect) {
 
 fn draw_pull_requests(f: &mut Frame, app: &App, area: Rect) {
     let items: Vec<ListItem> = if app.pull_requests.is_empty() {
-        vec![ListItem::new("No pull requests loaded. Press 'r' to refresh.")]
+        vec![ListItem::new(
+            "No pull requests loaded. Press 'r' to refresh.",
+        )]
     } else {
         app.pull_requests
             .iter()
@@ -183,10 +188,7 @@ fn draw_pull_requests(f: &mut Frame, app: &App, area: Rect) {
                     crate::models::PullRequestState::Superseded => Color::Yellow,
                 };
                 ListItem::new(Line::from(vec![
-                    Span::styled(
-                        format!("[{}] ", pr.state),
-                        Style::default().fg(state_color),
-                    ),
+                    Span::styled(format!("[{}] ", pr.state), Style::default().fg(state_color)),
                     Span::styled(format!("#{} ", pr.id), Style::default().fg(Color::DarkGray)),
                     Span::raw(&pr.title),
                 ]))
@@ -227,7 +229,10 @@ fn draw_issues(f: &mut Frame, app: &App, area: Rect) {
                 };
                 ListItem::new(Line::from(vec![
                     Span::raw(format!("{} ", kind_icon)),
-                    Span::styled(format!("#{} ", issue.id), Style::default().fg(Color::DarkGray)),
+                    Span::styled(
+                        format!("#{} ", issue.id),
+                        Style::default().fg(Color::DarkGray),
+                    ),
                     Span::raw(&issue.title),
                 ]))
             })
@@ -261,7 +266,9 @@ fn draw_pipelines(f: &mut Frame, app: &App, area: Rect) {
                     crate::models::PipelineStateName::Completed => {
                         if let Some(result) = &pipeline.state.result {
                             match result.name {
-                                crate::models::PipelineResultName::Successful => ("✅", Color::Green),
+                                crate::models::PipelineResultName::Successful => {
+                                    ("✅", Color::Green)
+                                }
                                 crate::models::PipelineResultName::Failed => ("❌", Color::Red),
                                 _ => ("⚪", Color::Gray),
                             }
@@ -307,7 +314,10 @@ fn draw_footer(f: &mut Frame, app: &App, area: Rect) {
     } else if let Some(status) = &app.status {
         Line::from(Span::styled(status, Style::default().fg(Color::Yellow)))
     } else if app.loading {
-        Line::from(Span::styled("Loading...", Style::default().fg(Color::Yellow)))
+        Line::from(Span::styled(
+            "Loading...",
+            Style::default().fg(Color::Yellow),
+        ))
     } else {
         Line::from(vec![
             Span::styled("q", Style::default().fg(Color::Cyan)),
@@ -323,7 +333,7 @@ fn draw_footer(f: &mut Frame, app: &App, area: Rect) {
         ])
     };
 
-    let footer = Paragraph::new(status_text)
-        .block(Block::default().borders(Borders::ALL).title(" Help "));
+    let footer =
+        Paragraph::new(status_text).block(Block::default().borders(Borders::ALL).title(" Help "));
     f.render_widget(footer, area);
 }

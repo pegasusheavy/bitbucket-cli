@@ -68,29 +68,20 @@ impl AuthCommands {
 
                     // Test the credentials
                     match crate::api::BitbucketClient::from_stored() {
-                        Ok(client) => {
-                            match client
-                                .get::<serde_json::Value>("/user")
-                                .await
-                            {
-                                Ok(user) => {
-                                    if let Some(display_name) = user.get("display_name") {
-                                        println!(
-                                            "  {} {}",
-                                            "Display name:".dimmed(),
-                                            display_name.as_str().unwrap_or("Unknown")
-                                        );
-                                    }
-                                }
-                                Err(e) => {
+                        Ok(client) => match client.get::<serde_json::Value>("/user").await {
+                            Ok(user) => {
+                                if let Some(display_name) = user.get("display_name") {
                                     println!(
-                                        "{} Credentials may be invalid: {}",
-                                        "⚠".yellow(),
-                                        e
+                                        "  {} {}",
+                                        "Display name:".dimmed(),
+                                        display_name.as_str().unwrap_or("Unknown")
                                     );
                                 }
                             }
-                        }
+                            Err(e) => {
+                                println!("{} Credentials may be invalid: {}", "⚠".yellow(), e);
+                            }
+                        },
                         Err(e) => {
                             println!("{} Failed to create client: {}", "✗".red(), e);
                         }

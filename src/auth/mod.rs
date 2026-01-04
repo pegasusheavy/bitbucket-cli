@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 
 pub use app_password::*;
 pub use keyring_store::*;
-pub use oauth::OAuthFlow;
 
 /// Credential types supported by the CLI
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,14 +44,13 @@ impl Credential {
     /// Check if the credential needs refresh (for OAuth)
     pub fn needs_refresh(&self) -> bool {
         match self {
-            Credential::OAuth { expires_at, .. } => {
-                if let Some(expires) = expires_at {
-                    let now = chrono::Utc::now().timestamp();
-                    // Refresh if expiring within 5 minutes
-                    *expires < now + 300
-                } else {
-                    false
-                }
+            Credential::OAuth {
+                expires_at: Some(expires),
+                ..
+            } => {
+                let now = chrono::Utc::now().timestamp();
+                // Refresh if expiring within 5 minutes
+                *expires < now + 300
             }
             _ => false,
         }
@@ -96,9 +94,7 @@ impl AuthManager {
 
     /// Check if authenticated
     pub fn is_authenticated(&self) -> bool {
-        self.get_credentials()
-            .map(|c| c.is_some())
-            .unwrap_or(false)
+        self.get_credentials().map(|c| c.is_some()).unwrap_or(false)
     }
 }
 

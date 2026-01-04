@@ -85,9 +85,7 @@ impl BitbucketClient {
 
         let request = UpdateRequest {
             title: title.map(|t| t.to_string()),
-            content: content.map(|c| ContentRequest {
-                raw: c.to_string(),
-            }),
+            content: content.map(|c| ContentRequest { raw: c.to_string() }),
             state,
         };
 
@@ -148,17 +146,13 @@ impl BitbucketClient {
     }
 
     /// Vote for an issue
-    pub async fn vote_issue(
-        &self,
-        workspace: &str,
-        repo_slug: &str,
-        issue_id: u64,
-    ) -> Result<()> {
+    pub async fn vote_issue(&self, workspace: &str, repo_slug: &str, issue_id: u64) -> Result<()> {
         let path = format!(
             "/repositories/{}/{}/issues/{}/vote",
             workspace, repo_slug, issue_id
         );
-        self.put::<serde_json::Value, _>(&path, &serde_json::json!({})).await?;
+        self.put::<serde_json::Value, _>(&path, &serde_json::json!({}))
+            .await?;
         Ok(())
     }
 
@@ -177,17 +171,13 @@ impl BitbucketClient {
     }
 
     /// Watch an issue
-    pub async fn watch_issue(
-        &self,
-        workspace: &str,
-        repo_slug: &str,
-        issue_id: u64,
-    ) -> Result<()> {
+    pub async fn watch_issue(&self, workspace: &str, repo_slug: &str, issue_id: u64) -> Result<()> {
         let path = format!(
             "/repositories/{}/{}/issues/{}/watch",
             workspace, repo_slug, issue_id
         );
-        self.put::<serde_json::Value, _>(&path, &serde_json::json!({})).await?;
+        self.put::<serde_json::Value, _>(&path, &serde_json::json!({}))
+            .await?;
         Ok(())
     }
 

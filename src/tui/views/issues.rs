@@ -71,7 +71,10 @@ impl IssuesView {
 
             vec![
                 Line::from(vec![
-                    Span::styled(format!("#{} ", issue.id), Style::default().fg(Color::DarkGray)),
+                    Span::styled(
+                        format!("#{} ", issue.id),
+                        Style::default().fg(Color::DarkGray),
+                    ),
                     Span::styled(&issue.title, Style::default().add_modifier(Modifier::BOLD)),
                 ]),
                 Line::from(""),
@@ -85,7 +88,10 @@ impl IssuesView {
                 ]),
                 Line::from(vec![
                     Span::styled("Priority: ", Style::default().fg(Color::DarkGray)),
-                    Span::styled(format!("{}", issue.priority), Style::default().fg(priority_color)),
+                    Span::styled(
+                        format!("{}", issue.priority),
+                        Style::default().fg(priority_color),
+                    ),
                 ]),
                 Line::from(""),
                 if let Some(reporter) = &issue.reporter {
@@ -113,10 +119,16 @@ impl IssuesView {
                     Span::raw(issue.created_on.format("%Y-%m-%d %H:%M").to_string()),
                 ]),
                 Line::from(""),
-                if issue.content.as_ref().and_then(|c| c.raw.as_ref()).is_some() {
-                    Line::from(vec![
-                        Span::styled("Description: ", Style::default().fg(Color::DarkGray)),
-                    ])
+                if issue
+                    .content
+                    .as_ref()
+                    .and_then(|c| c.raw.as_ref())
+                    .is_some()
+                {
+                    Line::from(vec![Span::styled(
+                        "Description: ",
+                        Style::default().fg(Color::DarkGray),
+                    )])
                 } else {
                     Line::from("")
                 },

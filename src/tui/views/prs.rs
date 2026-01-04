@@ -88,14 +88,18 @@ impl PrsView {
                     Span::raw(&pr.author.display_name),
                 ]),
                 Line::from(""),
-                Line::from(vec![
-                    Span::styled("Branches: ", Style::default().fg(Color::DarkGray)),
-                ]),
+                Line::from(vec![Span::styled(
+                    "Branches: ",
+                    Style::default().fg(Color::DarkGray),
+                )]),
                 Line::from(vec![
                     Span::styled("  ", Style::default()),
                     Span::styled(&pr.source.branch.name, Style::default().fg(Color::Cyan)),
                     Span::styled(" → ", Style::default().fg(Color::DarkGray)),
-                    Span::styled(&pr.destination.branch.name, Style::default().fg(Color::Green)),
+                    Span::styled(
+                        &pr.destination.branch.name,
+                        Style::default().fg(Color::Green),
+                    ),
                 ]),
                 Line::from(""),
                 Line::from(vec![

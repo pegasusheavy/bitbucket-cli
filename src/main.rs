@@ -1,3 +1,6 @@
+// Allow dead code for API methods designed for future use
+#![allow(dead_code)]
+
 mod api;
 mod auth;
 mod cli;

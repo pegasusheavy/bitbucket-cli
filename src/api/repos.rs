@@ -71,7 +71,9 @@ impl BitbucketClient {
         }
 
         let request = ForkRequest {
-            workspace: new_workspace.map(|w| WorkspaceRef { slug: w.to_string() }),
+            workspace: new_workspace.map(|w| WorkspaceRef {
+                slug: w.to_string(),
+            }),
             name: new_name.map(|n| n.to_string()),
         };
 
