@@ -2,9 +2,22 @@
 name = "bitbucket-cli"
 version = "0.1.0"
 edition = "2021"
-description = "A command-line interface for Bitbucket Cloud"
+rust-version = "1.75"
+description = "A powerful command-line interface for Bitbucket Cloud - manage repos, PRs, issues, and pipelines from your terminal"
 authors = ["Pegasus Heavy Industries"]
 license = "MIT"
+repository = "https://github.com/pegasusheavy/bitbucket-cli"
+homepage = "https://github.com/pegasusheavy/bitbucket-cli"
+documentation = "https://pegasusheavy.github.io/bitbucket-cli/"
+readme = "README.md"
+keywords = ["bitbucket", "cli", "git", "devtools", "tui"]
+categories = ["command-line-utilities", "development-tools"]
+exclude = [
+    "docs/",
+    ".github/",
+    "*.md",
+    "!README.md",
+]
 
 [[bin]]
 name = "bitbucket"
