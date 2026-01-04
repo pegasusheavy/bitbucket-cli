@@ -45,7 +45,7 @@ oauth2 = "4"
 
 # Configuration
 toml = "0.8"
-dirs = "5"
+dirs = "6"
 
 # Error handling
 anyhow = "1"
