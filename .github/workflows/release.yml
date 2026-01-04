@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          generate_release_notes: true
+
+  build-release:
+    name: Build Release
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: bitbucket
+            asset_name: bitbucket-linux-amd64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact_name: bitbucket
+            asset_name: bitbucket-linux-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: bitbucket
+            asset_name: bitbucket-darwin-amd64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: bitbucket
+            asset_name: bitbucket-darwin-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: bitbucket.exe
+            asset_name: bitbucket-windows-amd64.exe
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdbus-1-dev
+          if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+          fi
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar -czvf ../../../${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
+          cd ../../..
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd target/${{ matrix.target }}/release
+          7z a ../../../${{ matrix.asset_name }}.zip ${{ matrix.artifact_name }}
+          cd ../../..
+
+      - name: Upload Release Asset (Unix)
+        if: runner.os != 'Windows'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.asset_name }}.tar.gz
+
+      - name: Upload Release Asset (Windows)
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.asset_name }}.zip
+
+  publish-crates:
+    name: Publish to crates.io
+    needs: build-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev
+      - name: Publish
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true

@@ -1,0 +1,14 @@
+# Default owners for everything in the repo
+* @pegasusheavy/maintainers
+
+# Rust code
+/src/ @pegasusheavy/maintainers
+/Cargo.toml @pegasusheavy/maintainers
+/Cargo.lock @pegasusheavy/maintainers
+
+# Documentation
+/docs/ @pegasusheavy/maintainers
+*.md @pegasusheavy/maintainers
+
+# CI/CD
+/.github/ @pegasusheavy/maintainers

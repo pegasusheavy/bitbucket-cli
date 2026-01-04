@@ -1,0 +1,55 @@
+[package]
+name = "bitbucket-cli"
+version = "0.1.0"
+edition = "2021"
+description = "A command-line interface for Bitbucket Cloud"
+authors = ["Pegasus Heavy Industries"]
+license = "MIT"
+
+[[bin]]
+name = "bitbucket"
+path = "src/main.rs"
+
+[dependencies]
+# CLI
+clap = { version = "4", features = ["derive", "env"] }
+
+# TUI
+ratatui = "0.29"
+crossterm = "0.28"
+
+# Async runtime & HTTP
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Authentication
+keyring = "3"
+oauth2 = "4"
+
+# Configuration
+toml = "0.8"
+dirs = "5"
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Output formatting
+colored = "2"
+tabled = "0.17"
+indicatif = "0.17"
+
+# Utilities
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+open = "5"
+dialoguer = "0.11"
+url = "2"
+
+[profile.release]
+lto = true
+strip = true
