@@ -1,12 +1,4 @@
-// Allow dead code for API methods designed for future use
-#![allow(dead_code)]
-
-mod api;
-mod auth;
-mod cli;
-mod config;
-mod models;
-mod tui;
+use bitbucket_cli::{cli, tui};
 
 use anyhow::Result;
 use clap::Parser;

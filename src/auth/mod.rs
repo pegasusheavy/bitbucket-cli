@@ -24,6 +24,7 @@ pub enum Credential {
 
 impl Credential {
     /// Get the authorization header value for API requests
+    #[inline]
     pub fn auth_header(&self) -> String {
         match self {
             Credential::AppPassword {
@@ -31,32 +32,49 @@ impl Credential {
                 app_password,
             } => {
                 use base64::Engine;
-                let credentials = format!("{}:{}", username, app_password);
-                let encoded = base64::engine::general_purpose::STANDARD.encode(credentials);
-                format!("Basic {}", encoded)
+                // Pre-calculate capacity: "Basic " (6) + base64 encoded length
+                // base64 length = ceil(input_len * 4/3)
+                let input_len = username.len() + 1 + app_password.len();
+                let base64_len = input_len.div_ceil(3) * 4;
+                let mut result = String::with_capacity(6 + base64_len);
+                result.push_str("Basic ");
+
+                // Encode directly into a buffer to avoid intermediate String
+                let mut credentials = Vec::with_capacity(input_len);
+                credentials.extend_from_slice(username.as_bytes());
+                credentials.push(b':');
+                credentials.extend_from_slice(app_password.as_bytes());
+
+                base64::engine::general_purpose::STANDARD.encode_string(&credentials, &mut result);
+                result
             }
             Credential::OAuth { access_token, .. } => {
-                format!("Bearer {}", access_token)
+                // Pre-allocate: "Bearer " (7) + token length
+                let mut result = String::with_capacity(7 + access_token.len());
+                result.push_str("Bearer ");
+                result.push_str(access_token);
+                result
             }
         }
     }
 
     /// Check if the credential needs refresh (for OAuth)
+    #[inline]
     pub fn needs_refresh(&self) -> bool {
         match self {
             Credential::OAuth {
                 expires_at: Some(expires),
                 ..
             } => {
-                let now = chrono::Utc::now().timestamp();
-                // Refresh if expiring within 5 minutes
-                *expires < now + 300
+                // Refresh if expiring within 5 minutes (300 seconds)
+                *expires < chrono::Utc::now().timestamp() + 300
             }
             _ => false,
         }
     }
 
     /// Get username if available
+    #[inline]
     pub fn username(&self) -> Option<&str> {
         match self {
             Credential::AppPassword { username, .. } => Some(username),
