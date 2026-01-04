@@ -1,8 +1,8 @@
 [package]
 name = "bitbucket-cli"
 version = "0.2.0"
-edition = "2021"
-rust-version = "1.75"
+edition = "2024"
+rust-version = "1.85"
 description = "A powerful command-line interface for Bitbucket Cloud - manage repos, PRs, issues, and pipelines from your terminal"
 authors = ["Pegasus Heavy Industries"]
 license = "MIT"

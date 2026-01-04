@@ -294,8 +294,11 @@ mod tests {
         // Save original values
         let orig_config = env::var("XDG_CONFIG_HOME").ok();
 
-        // Set custom XDG_CONFIG_HOME
-        env::set_var("XDG_CONFIG_HOME", "/tmp/test-xdg-config");
+        // SAFETY: This test runs single-threaded and we restore the original value after
+        unsafe {
+            // Set custom XDG_CONFIG_HOME
+            env::set_var("XDG_CONFIG_HOME", "/tmp/test-xdg-config");
+        }
 
         let config_dir = xdg::config_dir().unwrap();
         assert_eq!(
@@ -303,10 +306,12 @@ mod tests {
             PathBuf::from("/tmp/test-xdg-config/bitbucket-cli")
         );
 
-        // Restore original value
-        match orig_config {
-            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
-            None => env::remove_var("XDG_CONFIG_HOME"),
+        // SAFETY: Restoring original environment state
+        unsafe {
+            match orig_config {
+                Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+                None => env::remove_var("XDG_CONFIG_HOME"),
+            }
         }
     }
 }
