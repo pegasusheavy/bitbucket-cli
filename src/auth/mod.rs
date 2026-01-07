@@ -121,26 +121,72 @@ pub struct AuthManager {
 
 impl AuthManager {
     pub fn new() -> Result<Self> {
-        // Try keyring first, fall back to file storage
-        // For now, always use file storage in WSL/containerized environments
-        // TODO: Make this configurable via environment variable
-        let keyring_works = Self::test_keyring();
-        let force_file_storage = std::env::var("BITBUCKET_USE_FILE_STORAGE").is_ok();
+        // Automatically detect if we should use file storage
+        let use_file_storage = Self::should_use_file_storage();
         
-        let backend = if keyring_works && !force_file_storage {
-            StorageBackend::Keyring(KeyringStore::new()?)
-        } else {
-            if force_file_storage {
-                println!("📁 Using file-based storage (BITBUCKET_USE_FILE_STORAGE is set)");
-            } else {
-                println!("⚠️  System keyring unavailable, using file-based storage");
-            }
-            println!("   Credentials stored in: ~/.config/bitbucket/credentials.json");
-            println!();
+        let backend = if use_file_storage {
+            // Use file storage silently - no need to warn the user
             StorageBackend::File(FileStore::new()?)
+        } else {
+            // Try keyring, but fall back to file if it fails
+            match KeyringStore::new() {
+                Ok(keyring) => StorageBackend::Keyring(keyring),
+                Err(_) => StorageBackend::File(FileStore::new()?),
+            }
         };
 
         Ok(Self { backend })
+    }
+
+    /// Determine if we should use file storage instead of keyring
+    fn should_use_file_storage() -> bool {
+        // Allow manual override
+        if std::env::var("BITBUCKET_USE_FILE_STORAGE").is_ok() {
+            return true;
+        }
+        
+        // Detect WSL
+        if Self::is_wsl() {
+            return true;
+        }
+        
+        // Detect if in a container
+        if Self::is_container() {
+            return true;
+        }
+        
+        // Test if keyring actually works
+        !Self::test_keyring()
+    }
+
+    /// Check if running in WSL
+    fn is_wsl() -> bool {
+        // Check for WSL in /proc/version
+        if let Ok(version) = std::fs::read_to_string("/proc/version") {
+            if version.to_lowercase().contains("microsoft") || version.to_lowercase().contains("wsl") {
+                return true;
+            }
+        }
+        
+        // Check WSL environment variables
+        std::env::var("WSL_DISTRO_NAME").is_ok() || std::env::var("WSL_INTEROP").is_ok()
+    }
+
+    /// Check if running in a container
+    fn is_container() -> bool {
+        // Check for /.dockerenv file
+        if std::path::Path::new("/.dockerenv").exists() {
+            return true;
+        }
+        
+        // Check for container in /proc/1/cgroup
+        if let Ok(cgroup) = std::fs::read_to_string("/proc/1/cgroup") {
+            if cgroup.contains("docker") || cgroup.contains("lxc") || cgroup.contains("kubepods") {
+                return true;
+            }
+        }
+        
+        false
     }
 
     /// Test if keyring is actually available and working
