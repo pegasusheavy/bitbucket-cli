@@ -122,31 +122,43 @@ pub struct AuthManager {
 impl AuthManager {
     pub fn new() -> Result<Self> {
         // Try keyring first, fall back to file storage
-        let backend = match KeyringStore::new() {
-            Ok(keyring) => {
-                // Test if keyring actually works by trying to read
-                match keyring.get_credential() {
-                    Ok(_) => {
-                        // Keyring works
-                        StorageBackend::Keyring(keyring)
-                    }
-                    Err(_) => {
-                        // Keyring exists but doesn't work, use file storage
-                        eprintln!("⚠️  System keyring unavailable, using file-based storage");
-                        eprintln!("   Credentials will be stored in: ~/.config/bitbucket/credentials.json");
-                        StorageBackend::File(FileStore::new()?)
-                    }
-                }
+        // For now, always use file storage in WSL/containerized environments
+        // TODO: Make this configurable via environment variable
+        let keyring_works = Self::test_keyring();
+        let force_file_storage = std::env::var("BITBUCKET_USE_FILE_STORAGE").is_ok();
+        
+        let backend = if keyring_works && !force_file_storage {
+            StorageBackend::Keyring(KeyringStore::new()?)
+        } else {
+            if force_file_storage {
+                println!("📁 Using file-based storage (BITBUCKET_USE_FILE_STORAGE is set)");
+            } else {
+                println!("⚠️  System keyring unavailable, using file-based storage");
             }
-            Err(_) => {
-                // No keyring available, use file storage
-                eprintln!("⚠️  System keyring unavailable, using file-based storage");
-                eprintln!("   Credentials will be stored in: ~/.config/bitbucket/credentials.json");
-                StorageBackend::File(FileStore::new()?)
-            }
+            println!("   Credentials stored in: ~/.config/bitbucket/credentials.json");
+            println!();
+            StorageBackend::File(FileStore::new()?)
         };
 
         Ok(Self { backend })
+    }
+
+    /// Test if keyring is actually available and working
+    fn test_keyring() -> bool {
+        // Try to create a test entry
+        match keyring::Entry::new("bitbucket-cli-test", "test") {
+            Ok(entry) => {
+                // Try to set and get a test value
+                if entry.set_password("test").is_ok() {
+                    let can_read = entry.get_password().is_ok();
+                    let _ = entry.delete_credential(); // Clean up
+                    can_read
+                } else {
+                    false
+                }
+            }
+            Err(_) => false,
+        }
     }
 
     /// Get stored credentials

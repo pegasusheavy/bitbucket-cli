@@ -84,6 +84,14 @@ Download pre-built binaries for your platform from the [Releases](https://github
 
 ### 1. Authenticate
 
+**Note for WSL/Container users:** If you're on WSL or a containerized environment, set this environment variable:
+```bash
+export BITBUCKET_USE_FILE_STORAGE=1
+```
+This forces file-based credential storage instead of system keyring.
+
+
+
 **Option A: OAuth 2.0 (Recommended)**
 
 ```bash
