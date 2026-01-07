@@ -97,6 +97,25 @@ src/
 ├── config/          # Configuration management
 ├── models/          # Data structures
 └── tui/             # Terminal UI
+packaging/           # Distribution package configs
+├── arch/            # Arch Linux PKGBUILD
+├── alpine/          # Alpine Linux APKBUILD
+└── windows/         # Windows MSI configuration
+scripts/             # Build and utility scripts
+docs/                # Documentation site
+```
+
+## Building Packages
+
+If you're working on packaging or release automation, see [docs/PACKAGING.md](docs/PACKAGING.md) for detailed information on building distribution packages for various platforms.
+
+Quick reference:
+```bash
+# Linux/macOS - Build all packages
+./scripts/build-packages.sh all
+
+# Windows - Build MSI installer
+.\scripts\build-packages.ps1
 ```
 
 ## Questions?

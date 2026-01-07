@@ -100,6 +100,161 @@ jobs:
         with:
           files: ${{ matrix.asset_name }}.zip
 
+  build-packages:
+    name: Build Packages
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            package_type: deb
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            package_type: rpm
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            package_type: arch
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            package_type: alpine
+            target: x86_64-unknown-linux-musl
+          - os: windows-latest
+            package_type: msi
+            target: x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.package_type }}
+
+      # Debian package
+      - name: Install cargo-deb
+        if: matrix.package_type == 'deb'
+        run: cargo install cargo-deb
+
+      - name: Install build dependencies (deb)
+        if: matrix.package_type == 'deb'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev
+
+      - name: Build .deb package
+        if: matrix.package_type == 'deb'
+        run: |
+          cargo deb
+          DEB_FILE=$(ls target/debian/*.deb | head -n1)
+          cp "$DEB_FILE" bitbucket-cli_amd64.deb
+
+      - name: Upload .deb package
+        if: matrix.package_type == 'deb'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bitbucket-cli_amd64.deb
+
+      # RPM package
+      - name: Install cargo-generate-rpm
+        if: matrix.package_type == 'rpm'
+        run: cargo install cargo-generate-rpm
+
+      - name: Install build dependencies (rpm)
+        if: matrix.package_type == 'rpm'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev
+
+      - name: Build .rpm package
+        if: matrix.package_type == 'rpm'
+        run: |
+          cargo build --release
+          cargo generate-rpm
+          RPM_FILE=$(ls target/generate-rpm/*.rpm | head -n1)
+          cp "$RPM_FILE" bitbucket-cli.x86_64.rpm
+
+      - name: Upload .rpm package
+        if: matrix.package_type == 'rpm'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bitbucket-cli.x86_64.rpm
+
+      # Arch Linux package
+      - name: Install build dependencies (arch)
+        if: matrix.package_type == 'arch'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev zstd
+
+      - name: Build Arch package
+        if: matrix.package_type == 'arch'
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          cd target/${{ matrix.target }}/release
+          tar -I 'zstd -19' -cf ../../../bitbucket-cli-${{ github.ref_name }}-x86_64.pkg.tar.zst bitbucket
+          cd ../../..
+
+      - name: Upload Arch package artifacts
+        if: matrix.package_type == 'arch'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bitbucket-cli-${{ github.ref_name }}-x86_64.pkg.tar.zst
+            packaging/arch/PKGBUILD
+
+      # Alpine Linux package
+      - name: Install musl target
+        if: matrix.package_type == 'alpine'
+        run: rustup target add x86_64-unknown-linux-musl
+
+      - name: Install build dependencies (alpine)
+        if: matrix.package_type == 'alpine'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools libdbus-1-dev
+
+      - name: Build Alpine package
+        if: matrix.package_type == 'alpine'
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          cd target/${{ matrix.target }}/release
+          tar -czvf ../../../bitbucket-cli-${{ github.ref_name }}-alpine-x86_64.tar.gz bitbucket
+          cd ../../..
+
+      - name: Upload Alpine package artifacts
+        if: matrix.package_type == 'alpine'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bitbucket-cli-${{ github.ref_name }}-alpine-x86_64.tar.gz
+            packaging/alpine/APKBUILD
+
+      # Windows MSI installer
+      - name: Install WiX
+        if: matrix.package_type == 'msi'
+        run: |
+          dotnet tool install --global wix
+          wix extension add -g WixToolset.UI.wixext
+
+      - name: Build Windows binary
+        if: matrix.package_type == 'msi'
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create placeholder icon
+        if: matrix.package_type == 'msi'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path packaging\windows
+          # Create a simple placeholder icon file (this should be replaced with a real icon)
+          Set-Content -Path "packaging\windows\icon.ico" -Value "" -NoNewline
+
+      - name: Build MSI installer
+        if: matrix.package_type == 'msi'
+        shell: pwsh
+        run: |
+          wix build -arch x64 -o bitbucket-cli.msi packaging/windows/main.wxs
+
+      - name: Upload MSI installer
+        if: matrix.package_type == 'msi'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bitbucket-cli.msi
+
   publish-crates:
     name: Publish to crates.io
     needs: build-release

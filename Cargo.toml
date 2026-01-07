@@ -83,3 +83,31 @@ opt-level = 3
 [profile.bench]
 lto = true
 codegen-units = 1
+
+# Debian package configuration
+[package.metadata.deb]
+maintainer = "Pegasus Heavy Industries"
+copyright = "2025, Pegasus Heavy Industries <contact@pegasusheavy.com>"
+license-file = ["LICENSE", "4"]
+extended-description = """\
+A powerful command-line interface for Bitbucket Cloud. \
+Manage repositories, pull requests, issues, and pipelines \
+directly from your terminal with both CLI and TUI modes."""
+depends = "$auto, libdbus-1-3"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/bitbucket", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/bitbucket-cli/", "644"],
+    ["LICENSE", "usr/share/doc/bitbucket-cli/", "644"],
+]
+
+# RPM package configuration
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/bitbucket", dest = "/usr/bin/bitbucket", mode = "755" },
+    { source = "README.md", dest = "/usr/share/doc/bitbucket-cli/README.md", mode = "644" },
+    { source = "LICENSE", dest = "/usr/share/doc/bitbucket-cli/LICENSE", mode = "644" },
+]
+[package.metadata.generate-rpm.requires]
+dbus-libs = "*"

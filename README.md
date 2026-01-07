@@ -24,6 +24,50 @@ A powerful command-line interface for Bitbucket Cloud. Manage repositories, pull
 cargo install bitbucket-cli
 ```
 
+### Debian/Ubuntu
+
+```bash
+# Download the .deb package from releases
+wget https://github.com/pegasusheavy/bitbucket-cli/releases/latest/download/bitbucket-cli_amd64.deb
+sudo dpkg -i bitbucket-cli_amd64.deb
+```
+
+### Red Hat/Fedora/CentOS
+
+```bash
+# Download the .rpm package from releases
+wget https://github.com/pegasusheavy/bitbucket-cli/releases/latest/download/bitbucket-cli.x86_64.rpm
+sudo rpm -i bitbucket-cli.x86_64.rpm
+# or with dnf
+sudo dnf install bitbucket-cli.x86_64.rpm
+```
+
+### Arch Linux
+
+```bash
+# Download the package from releases
+wget https://github.com/pegasusheavy/bitbucket-cli/releases/latest/download/bitbucket-cli-vX.X.X-x86_64.pkg.tar.zst
+sudo pacman -U bitbucket-cli-vX.X.X-x86_64.pkg.tar.zst
+
+# Or build from PKGBUILD
+git clone https://github.com/pegasusheavy/bitbucket-cli.git
+cd bitbucket-cli/packaging/arch
+makepkg -si
+```
+
+### Alpine Linux
+
+```bash
+# Download the tarball from releases
+wget https://github.com/pegasusheavy/bitbucket-cli/releases/latest/download/bitbucket-cli-vX.X.X-alpine-x86_64.tar.gz
+tar -xzf bitbucket-cli-vX.X.X-alpine-x86_64.tar.gz
+sudo mv bitbucket /usr/local/bin/
+```
+
+### Windows
+
+Download the MSI installer from the [Releases](https://github.com/pegasusheavy/bitbucket-cli/releases) page and run it.
+
 ### From Source
 
 ```bash
@@ -34,7 +78,7 @@ cargo install --path .
 
 ### Pre-built Binaries
 
-Download pre-built binaries from the [Releases](https://github.com/pegasusheavy/bitbucket-cli/releases) page.
+Download pre-built binaries for your platform from the [Releases](https://github.com/pegasusheavy/bitbucket-cli/releases) page.
 
 ## 🚀 Quick Start
 

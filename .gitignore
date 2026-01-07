@@ -26,3 +26,15 @@ docs/.angular/
 
 # Test artifacts
 *.log
+
+# Packaging artifacts
+*.deb
+*.rpm
+*.pkg.tar.zst
+*.msi
+*.apk
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/*.tar.gz
+packaging/alpine/src/
+packaging/alpine/pkg/
