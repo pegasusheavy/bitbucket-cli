@@ -79,17 +79,26 @@ impl AuthCommands {
                         .or_else(|| std::env::var("BITBUCKET_CLIENT_ID").ok())
                         .or_else(|| {
                             println!();
-                            println!("📋 OAuth App Setup Required");
+                            println!("📋 OAuth Consumer Setup Required");
                             println!();
                             println!("To use OAuth authentication, you need to create an OAuth consumer:");
                             println!("1. Go to: https://bitbucket.org/[workspace]/workspace/settings/oauth-consumers/new");
-                            println!("2. Set callback URL to: http://127.0.0.1:*/callback");
-                            println!("3. Select required permissions (repository, pullrequest, issue, pipeline, account)");
-                            println!("4. Copy the Client ID and Secret");
+                            println!("2. Set callback URL to ONE of these (pick any available port):");
+                            println!("   • http://127.0.0.1:8080/callback");
+                            println!("   • http://127.0.0.1:3000/callback");
+                            println!("   • http://127.0.0.1:8888/callback");
+                            println!("   • http://127.0.0.1:9000/callback");
+                            println!("3. Select required permissions:");
+                            println!("   ✓ Account (Read)");
+                            println!("   ✓ Repositories (Read)");
+                            println!("   ✓ Pull requests (Read, Write)");
+                            println!("   ✓ Issues (Read, Write)");
+                            println!("   ✓ Pipelines (Read, Write)");
+                            println!("4. Copy the Key (Client ID) and Secret");
                             println!();
                             
                             Input::<String>::new()
-                                .with_prompt("OAuth Client ID")
+                                .with_prompt("OAuth Client ID (Key)")
                                 .interact_text()
                                 .ok()
                         })

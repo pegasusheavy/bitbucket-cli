@@ -147,9 +147,18 @@ bitbucket auth login --api-key  # or --oauth
 When using OAuth, you need to create an OAuth consumer first:
 
 1. Go to https://bitbucket.org/[workspace]/workspace/settings/oauth-consumers/new
-2. Set callback URL: `http://127.0.0.1:*/callback`
-3. Select permissions: repository, pullrequest, issue, pipeline, account
-4. Save and copy Client ID and Secret
+2. Set callback URL to **ONE** of these (the CLI tries them in order):
+   - `http://127.0.0.1:8080/callback`
+   - `http://127.0.0.1:3000/callback`
+   - `http://127.0.0.1:8888/callback`
+   - `http://127.0.0.1:9000/callback`
+3. Select permissions:
+   - Account (Read)
+   - Repositories (Read)
+   - Pull requests (Read, Write)
+   - Issues (Read, Write)
+   - Pipelines (Read, Write)
+4. Save and copy Key (Client ID) and Secret
 
 #### "Credentials may be invalid"
 

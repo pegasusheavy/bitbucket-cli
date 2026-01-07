@@ -92,9 +92,18 @@ bitbucket auth login --oauth
 
 You'll need to create an OAuth consumer first:
 1. Go to your [Bitbucket workspace settings](https://bitbucket.org/[workspace]/workspace/settings/oauth-consumers/new)
-2. Set callback URL to `http://127.0.0.1:*/callback`
-3. Select permissions: repository, pullrequest, issue, pipeline, account
-4. Use the Client ID and Secret when prompted
+2. Set callback URL to **ONE** of these (the CLI will use the first available):
+   - `http://127.0.0.1:8080/callback`
+   - `http://127.0.0.1:3000/callback`
+   - `http://127.0.0.1:8888/callback`
+   - `http://127.0.0.1:9000/callback`
+3. Select permissions:
+   - Account (Read)
+   - Repositories (Read)
+   - Pull requests (Read, Write)
+   - Issues (Read, Write)
+   - Pipelines (Read, Write)
+4. Copy the Key (Client ID) and Secret when prompted
 
 **Option B: API Key (For CI/Automation)**
 

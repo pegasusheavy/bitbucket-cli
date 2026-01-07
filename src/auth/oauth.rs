@@ -59,17 +59,45 @@ impl OAuthFlow {
         }
     }
 
+    /// Try to bind to one of the preferred ports
+    fn bind_to_available_port(ports: &[u16]) -> Result<(TcpListener, u16)> {
+        for &port in ports {
+            match TcpListener::bind(format!("127.0.0.1:{}", port)) {
+                Ok(listener) => {
+                    return Ok((listener, port));
+                }
+                Err(_) => continue,
+            }
+        }
+        
+        anyhow::bail!(
+            "Could not bind to any preferred port. Tried: {:?}\n\n\
+            Please ensure at least one of these ports is available:\n\
+            - Close any applications using these ports\n\
+            - Or use API key authentication: bitbucket auth login --api-key",
+            ports
+        )
+    }
+
     /// Run the OAuth 2.0 authentication flow
     pub async fn authenticate(&self, auth_manager: &AuthManager) -> Result<Credential> {
         println!("\n🔐 Bitbucket OAuth Authentication");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         println!();
 
-        // Find an available port for the callback server
-        let listener =
-            TcpListener::bind("127.0.0.1:0").context("Failed to bind callback server")?;
-        let port = listener.local_addr()?.port();
+        // Use a static port for OAuth callback (required by Bitbucket)
+        // Try common ports in order: 8080, 3000, 8888, 9000
+        const PREFERRED_PORTS: &[u16] = &[8080, 3000, 8888, 9000];
+        
+        let (listener, port) = Self::bind_to_available_port(PREFERRED_PORTS)
+            .context("Failed to bind callback server. Please ensure one of these ports is available: 8080, 3000, 8888, or 9000")?;
+        
         let redirect_url = format!("http://127.0.0.1:{}/callback", port);
+        
+        println!("📡 Callback server listening on port {}", port);
+        println!("   Make sure your OAuth consumer callback URL is set to:");
+        println!("   {}", redirect_url);
+        println!();
 
         // Create OAuth client
         let client = BasicClient::new(ClientId::new(self.client_id.clone()))
