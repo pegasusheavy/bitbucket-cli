@@ -29,7 +29,7 @@ clap = { version = "4", features = ["derive", "env"] }
 
 # TUI
 ratatui = "0.29"
-crossterm = "0.28"
+crossterm = "0.29"
 
 # Async runtime & HTTP
 tokio = { version = "1", features = ["full"] }
