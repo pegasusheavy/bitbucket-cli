@@ -52,7 +52,7 @@ anyhow = "1"
 thiserror = "2"
 
 # Output formatting
-colored = "2"
+colored = "3"
 tabled = "0.17"
 indicatif = "0.17"
 
