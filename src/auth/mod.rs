@@ -1,4 +1,5 @@
 pub mod api_key;
+pub mod file_store;
 pub mod keyring_store;
 pub mod oauth;
 
@@ -6,6 +7,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 pub use api_key::*;
+pub use file_store::*;
 pub use keyring_store::*;
 pub use oauth::*;
 
@@ -106,31 +108,69 @@ impl Credential {
     }
 }
 
+/// Credential storage backend
+enum StorageBackend {
+    Keyring(KeyringStore),
+    File(FileStore),
+}
+
 /// Authentication manager
 pub struct AuthManager {
-    keyring: KeyringStore,
+    backend: StorageBackend,
 }
 
 impl AuthManager {
     pub fn new() -> Result<Self> {
-        Ok(Self {
-            keyring: KeyringStore::new()?,
-        })
+        // Try keyring first, fall back to file storage
+        let backend = match KeyringStore::new() {
+            Ok(keyring) => {
+                // Test if keyring actually works by trying to read
+                match keyring.get_credential() {
+                    Ok(_) => {
+                        // Keyring works
+                        StorageBackend::Keyring(keyring)
+                    }
+                    Err(_) => {
+                        // Keyring exists but doesn't work, use file storage
+                        eprintln!("⚠️  System keyring unavailable, using file-based storage");
+                        eprintln!("   Credentials will be stored in: ~/.config/bitbucket/credentials.json");
+                        StorageBackend::File(FileStore::new()?)
+                    }
+                }
+            }
+            Err(_) => {
+                // No keyring available, use file storage
+                eprintln!("⚠️  System keyring unavailable, using file-based storage");
+                eprintln!("   Credentials will be stored in: ~/.config/bitbucket/credentials.json");
+                StorageBackend::File(FileStore::new()?)
+            }
+        };
+
+        Ok(Self { backend })
     }
 
     /// Get stored credentials
     pub fn get_credentials(&self) -> Result<Option<Credential>> {
-        self.keyring.get_credential()
+        match &self.backend {
+            StorageBackend::Keyring(store) => store.get_credential(),
+            StorageBackend::File(store) => store.get_credential(),
+        }
     }
 
     /// Store credentials
     pub fn store_credentials(&self, credential: &Credential) -> Result<()> {
-        self.keyring.store_credential(credential)
+        match &self.backend {
+            StorageBackend::Keyring(store) => store.store_credential(credential),
+            StorageBackend::File(store) => store.store_credential(credential),
+        }
     }
 
     /// Clear stored credentials
     pub fn clear_credentials(&self) -> Result<()> {
-        self.keyring.delete_credential()
+        match &self.backend {
+            StorageBackend::Keyring(store) => store.delete_credential(),
+            StorageBackend::File(store) => store.delete_credential(),
+        }
     }
 
     /// Check if authenticated
