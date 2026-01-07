@@ -154,9 +154,9 @@ fn create_sample_issue() -> Issue {
 }
 
 fn create_sample_credential() -> Credential {
-    Credential::AppPassword {
+    Credential::ApiKey {
         username: "testuser".to_string(),
-        app_password: "super_secret_app_password_12345".to_string(),
+        api_key: "super_secret_api_key_12345".to_string(),
     }
 }
 
@@ -227,27 +227,27 @@ fn bench_json_serialization(c: &mut Criterion) {
 fn bench_auth_header(c: &mut Criterion) {
     let mut group = c.benchmark_group("auth");
 
-    let app_password = Credential::AppPassword {
-        username: "testuser".to_string(),
-        app_password: "app_password_secret_value".to_string(),
-    };
-
     let oauth = Credential::OAuth {
         access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ".to_string(),
         refresh_token: Some("refresh_token_value".to_string()),
         expires_at: Some(chrono::Utc::now().timestamp() + 3600),
     };
 
-    group.bench_function("app_password_header", |b| {
-        b.iter(|| {
-            let header = black_box(&app_password).auth_header();
-            black_box(header)
-        })
-    });
+    let api_key = Credential::ApiKey {
+        username: "testuser".to_string(),
+        api_key: "api_key_secret_value".to_string(),
+    };
 
     group.bench_function("oauth_header", |b| {
         b.iter(|| {
             let header = black_box(&oauth).auth_header();
+            black_box(header)
+        })
+    });
+
+    group.bench_function("api_key_header", |b| {
+        b.iter(|| {
+            let header = black_box(&api_key).auth_header();
             black_box(header)
         })
     });

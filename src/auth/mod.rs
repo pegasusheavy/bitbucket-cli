@@ -1,24 +1,29 @@
-pub mod app_password;
+pub mod api_key;
 pub mod keyring_store;
 pub mod oauth;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-pub use app_password::*;
+pub use api_key::*;
 pub use keyring_store::*;
+pub use oauth::*;
 
 /// Credential types supported by the CLI
+/// OAuth2 is preferred, with API key as fallback
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Credential {
-    AppPassword {
-        username: String,
-        app_password: String,
-    },
+    /// OAuth 2.0 token (PREFERRED)
     OAuth {
         access_token: String,
         refresh_token: Option<String>,
         expires_at: Option<i64>,
+    },
+    /// Bitbucket API key (fallback for automation/CI)
+    /// Note: App passwords are deprecated by Atlassian
+    ApiKey {
+        username: String,
+        api_key: String,
     },
 }
 
@@ -27,14 +32,18 @@ impl Credential {
     #[inline]
     pub fn auth_header(&self) -> String {
         match self {
-            Credential::AppPassword {
-                username,
-                app_password,
-            } => {
+            Credential::OAuth { access_token, .. } => {
+                // Pre-allocate: "Bearer " (7) + token length
+                let mut result = String::with_capacity(7 + access_token.len());
+                result.push_str("Bearer ");
+                result.push_str(access_token);
+                result
+            }
+            Credential::ApiKey { username, api_key } => {
                 use base64::Engine;
                 // Pre-calculate capacity: "Basic " (6) + base64 encoded length
                 // base64 length = ceil(input_len * 4/3)
-                let input_len = username.len() + 1 + app_password.len();
+                let input_len = username.len() + 1 + api_key.len();
                 let base64_len = input_len.div_ceil(3) * 4;
                 let mut result = String::with_capacity(6 + base64_len);
                 result.push_str("Basic ");
@@ -43,18 +52,20 @@ impl Credential {
                 let mut credentials = Vec::with_capacity(input_len);
                 credentials.extend_from_slice(username.as_bytes());
                 credentials.push(b':');
-                credentials.extend_from_slice(app_password.as_bytes());
+                credentials.extend_from_slice(api_key.as_bytes());
 
                 base64::engine::general_purpose::STANDARD.encode_string(&credentials, &mut result);
                 result
             }
-            Credential::OAuth { access_token, .. } => {
-                // Pre-allocate: "Bearer " (7) + token length
-                let mut result = String::with_capacity(7 + access_token.len());
-                result.push_str("Bearer ");
-                result.push_str(access_token);
-                result
-            }
+        }
+    }
+    
+    /// Get the credential type name for display
+    #[inline]
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Credential::OAuth { .. } => "OAuth 2.0",
+            Credential::ApiKey { .. } => "API Key",
         }
     }
 
@@ -77,9 +88,21 @@ impl Credential {
     #[inline]
     pub fn username(&self) -> Option<&str> {
         match self {
-            Credential::AppPassword { username, .. } => Some(username),
+            Credential::ApiKey { username, .. } => Some(username),
             Credential::OAuth { .. } => None,
         }
+    }
+    
+    /// Check if this is an OAuth credential
+    #[inline]
+    pub fn is_oauth(&self) -> bool {
+        matches!(self, Credential::OAuth { .. })
+    }
+    
+    /// Check if this is an API key credential
+    #[inline]
+    pub fn is_api_key(&self) -> bool {
+        matches!(self, Credential::ApiKey { .. })
     }
 }
 

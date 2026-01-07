@@ -3,19 +3,23 @@ use dialoguer::{Input, Password};
 
 use super::{AuthManager, Credential};
 
-/// App password authentication flow
-pub struct AppPasswordAuth;
+/// API key authentication flow (fallback method)
+/// Note: Atlassian has deprecated app passwords in favor of OAuth2
+pub struct ApiKeyAuth;
 
-impl AppPasswordAuth {
-    /// Run the interactive app password authentication flow
+impl ApiKeyAuth {
+    /// Run the interactive API key authentication flow
     pub async fn authenticate(auth_manager: &AuthManager) -> Result<Credential> {
-        println!("\n🔐 Bitbucket App Password Authentication");
+        println!("\n🔐 Bitbucket API Key Authentication");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         println!();
-        println!("To create an app password:");
-        println!("1. Go to Bitbucket Settings → Personal Bitbucket settings");
-        println!("2. Click 'App passwords' under 'Access management'");
-        println!("3. Click 'Create app password'");
+        println!("⚠️  Note: OAuth 2.0 is the preferred authentication method.");
+        println!("   API keys are provided for automation/CI scenarios.");
+        println!();
+        println!("To create an API key (HTTP access token):");
+        println!("1. Go to Bitbucket Settings → Personal settings");
+        println!("2. Click 'HTTP access tokens' under 'Access management'");
+        println!("3. Click 'Create token'");
         println!("4. Give it a label and select required permissions");
         println!();
 
@@ -24,14 +28,14 @@ impl AppPasswordAuth {
             .interact_text()
             .context("Failed to read username")?;
 
-        let app_password: String = Password::new()
-            .with_prompt("App password")
+        let api_key: String = Password::new()
+            .with_prompt("API key (HTTP access token)")
             .interact()
-            .context("Failed to read app password")?;
+            .context("Failed to read API key")?;
 
-        let credential = Credential::AppPassword {
+        let credential = Credential::ApiKey {
             username: username.clone(),
-            app_password,
+            api_key,
         };
 
         // Validate credentials by making a test API call
@@ -41,6 +45,7 @@ impl AppPasswordAuth {
         auth_manager.store_credentials(&credential)?;
 
         println!("\n✅ Successfully authenticated as {}", username);
+        println!("💡 Tip: Use 'bitbucket auth login --oauth' for a better experience");
 
         Ok(credential)
     }
@@ -59,7 +64,7 @@ impl AppPasswordAuth {
         if response.status().is_success() {
             Ok(())
         } else if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-            anyhow::bail!("Invalid username or app password")
+            anyhow::bail!("Invalid username or API key")
         } else {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();

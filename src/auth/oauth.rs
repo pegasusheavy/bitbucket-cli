@@ -1,14 +1,46 @@
 use anyhow::{Context, Result};
 use oauth2::basic::BasicClient;
-use oauth2::reqwest::async_http_client;
 use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl,
-    Scope, TokenResponse, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, 
+    RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl,
 };
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 
 use super::{AuthManager, Credential};
+
+/// Async HTTP client for OAuth2 token exchange
+async fn async_http_client(
+    request: oauth2::HttpRequest,
+) -> Result<oauth2::HttpResponse, reqwest::Error> {
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()?;
+
+    let mut request_builder = client
+        .request(request.method().clone(), request.uri().to_string())
+        .body(request.body().clone());
+
+    for (name, value) in request.headers() {
+        request_builder = request_builder.header(name.as_str(), value.as_bytes());
+    }
+
+    let response = request_builder.send().await?;
+
+    let status_code = response.status();
+    let headers = response.headers().to_owned();
+    let body = response.bytes().await?.to_vec();
+
+    let mut builder = oauth2::http::Response::builder()
+        .status(status_code);
+    
+    for (name, value) in headers.iter() {
+        builder = builder.header(name, value);
+    }
+    
+    // Build the response - this should never fail with valid HTTP data
+    Ok(builder.body(body).expect("Failed to build HTTP response"))
+}
 
 const BITBUCKET_AUTH_URL: &str = "https://bitbucket.org/site/oauth2/authorize";
 const BITBUCKET_TOKEN_URL: &str = "https://bitbucket.org/site/oauth2/access_token";
@@ -40,20 +72,18 @@ impl OAuthFlow {
         let redirect_url = format!("http://127.0.0.1:{}/callback", port);
 
         // Create OAuth client
-        let client = BasicClient::new(
-            ClientId::new(self.client_id.clone()),
-            Some(ClientSecret::new(self.client_secret.clone())),
-            AuthUrl::new(BITBUCKET_AUTH_URL.to_string())?,
-            Some(TokenUrl::new(BITBUCKET_TOKEN_URL.to_string())?),
-        )
-        .set_redirect_uri(RedirectUrl::new(redirect_url.clone())?);
+        let client = BasicClient::new(ClientId::new(self.client_id.clone()))
+            .set_client_secret(ClientSecret::new(self.client_secret.clone()))
+            .set_auth_uri(AuthUrl::new(BITBUCKET_AUTH_URL.to_string())?)
+            .set_token_uri(TokenUrl::new(BITBUCKET_TOKEN_URL.to_string())?)
+            .set_redirect_uri(RedirectUrl::new(redirect_url.clone())?);
 
         // Generate PKCE challenge
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
 
         // Generate authorization URL
         let (auth_url, csrf_token) = client
-            .authorize_url(CsrfToken::new_random)
+            .authorize_url(|| CsrfToken::new_random())
             .add_scope(Scope::new("repository".to_string()))
             .add_scope(Scope::new("pullrequest".to_string()))
             .add_scope(Scope::new("issue".to_string()))
@@ -85,7 +115,7 @@ impl OAuthFlow {
         let token_response = client
             .exchange_code(code)
             .set_pkce_verifier(pkce_verifier)
-            .request_async(async_http_client)
+            .request_async(&async_http_client)
             .await
             .context("Failed to exchange authorization code for token")?;
 
@@ -185,16 +215,15 @@ Content-Type: text/html
         auth_manager: &AuthManager,
         refresh_token: &str,
     ) -> Result<Credential> {
-        let client = BasicClient::new(
-            ClientId::new(self.client_id.clone()),
-            Some(ClientSecret::new(self.client_secret.clone())),
-            AuthUrl::new(BITBUCKET_AUTH_URL.to_string())?,
-            Some(TokenUrl::new(BITBUCKET_TOKEN_URL.to_string())?),
-        );
+        let client = BasicClient::new(ClientId::new(self.client_id.clone()))
+            .set_client_secret(ClientSecret::new(self.client_secret.clone()))
+            .set_auth_uri(AuthUrl::new(BITBUCKET_AUTH_URL.to_string())?)
+            .set_token_uri(TokenUrl::new(BITBUCKET_TOKEN_URL.to_string())?);
+
 
         let token_response = client
-            .exchange_refresh_token(&oauth2::RefreshToken::new(refresh_token.to_string()))
-            .request_async(async_http_client)
+            .exchange_refresh_token(&RefreshToken::new(refresh_token.to_string()))
+            .request_async(&async_http_client)
             .await
             .context("Failed to refresh token")?;
 

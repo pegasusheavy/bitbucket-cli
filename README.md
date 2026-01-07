@@ -14,7 +14,7 @@ A powerful command-line interface for Bitbucket Cloud. Manage repositories, pull
 - 🐛 **Issue Tracking** - Create, view, comment on, and manage issues
 - ⚡ **Pipelines** - Trigger, monitor, and manage CI/CD pipelines
 - 🖥️ **Interactive TUI** - Beautiful terminal UI for browsing and managing resources
-- 🔐 **Secure Authentication** - App passwords and OAuth with secure keyring storage
+- 🔐 **Secure Authentication** - OAuth 2.0 preferred, API key fallback, with secure keyring storage
 
 ## 📦 Installation
 
@@ -84,11 +84,30 @@ Download pre-built binaries for your platform from the [Releases](https://github
 
 ### 1. Authenticate
 
+**Option A: OAuth 2.0 (Recommended)**
+
 ```bash
-bitbucket auth login
+bitbucket auth login --oauth
 ```
 
-You'll be prompted to enter your Bitbucket username and app password. [Create an app password](https://bitbucket.org/account/settings/app-passwords/) with the required permissions.
+You'll need to create an OAuth consumer first:
+1. Go to your [Bitbucket workspace settings](https://bitbucket.org/[workspace]/workspace/settings/oauth-consumers/new)
+2. Set callback URL to `http://127.0.0.1:*/callback`
+3. Select permissions: repository, pullrequest, issue, pipeline, account
+4. Use the Client ID and Secret when prompted
+
+**Option B: API Key (For CI/Automation)**
+
+```bash
+bitbucket auth login --api-key
+```
+
+You'll need to create an HTTP access token:
+1. Go to [Personal settings → HTTP access tokens](https://bitbucket.org/account/settings/app-passwords/)
+2. Create a new token with required permissions
+3. Enter your username and token when prompted
+
+**Note:** App passwords are deprecated by Atlassian. OAuth 2.0 is the preferred method.
 
 ### 2. Start Using
 
