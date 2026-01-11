@@ -110,7 +110,7 @@ impl OAuthFlow {
 
         // Generate authorization URL
         let (auth_url, csrf_token) = client
-            .authorize_url(|| CsrfToken::new_random())
+            .authorize_url(CsrfToken::new_random)
             .add_scope(Scope::new("repository".to_string()))
             .add_scope(Scope::new("pullrequest".to_string()))
             .add_scope(Scope::new("issue".to_string()))
