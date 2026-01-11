@@ -35,17 +35,20 @@ impl ApiKeyAuth {
 
         // Trim whitespace from token (common copy-paste issue)
         let api_key = api_key.trim().to_string();
-        
+
         // Validate token format
         if api_key.is_empty() {
             anyhow::bail!("API key cannot be empty");
         }
-        
+
         // Check for common Atlassian token prefixes
         if !api_key.starts_with("ATATT") && !api_key.starts_with("ATCTT") {
             println!("⚠️  Warning: Token doesn't start with expected prefix (ATATT or ATCTT)");
             println!("   This might not be a valid Bitbucket API token.");
-            println!("   Token starts with: {}", &api_key.chars().take(5).collect::<String>());
+            println!(
+                "   Token starts with: {}",
+                &api_key.chars().take(5).collect::<String>()
+            );
         }
 
         let credential = Credential::ApiKey {
@@ -80,7 +83,7 @@ impl ApiKeyAuth {
             .context("Failed to connect to Bitbucket API")?;
 
         let status = response.status();
-        
+
         if status.is_success() {
             Ok(())
         } else if status == reqwest::StatusCode::UNAUTHORIZED {
@@ -96,14 +99,18 @@ impl ApiKeyAuth {
                 3. Token has 'Read' permission at minimum"
             )
         } else {
-            let body = response.text().await.unwrap_or_else(|_| String::from("<unable to read response>"));
+            let body = response
+                .text()
+                .await
+                .unwrap_or_else(|_| String::from("<unable to read response>"));
             anyhow::bail!(
                 "API error ({}):\n{}\n\n\
                 This might indicate:\n\
                 - Network connectivity issues\n\
                 - Bitbucket API is unavailable\n\
                 - Rate limiting",
-                status, body
+                status,
+                body
             )
         }
     }

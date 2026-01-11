@@ -23,10 +23,7 @@ pub enum Credential {
     },
     /// Bitbucket API key (fallback for automation/CI)
     /// Note: App passwords are deprecated by Atlassian
-    ApiKey {
-        username: String,
-        api_key: String,
-    },
+    ApiKey { username: String, api_key: String },
 }
 
 impl Credential {
@@ -61,7 +58,7 @@ impl Credential {
             }
         }
     }
-    
+
     /// Get the credential type name for display
     #[inline]
     pub fn type_name(&self) -> &'static str {
@@ -94,13 +91,13 @@ impl Credential {
             Credential::OAuth { .. } => None,
         }
     }
-    
+
     /// Check if this is an OAuth credential
     #[inline]
     pub fn is_oauth(&self) -> bool {
         matches!(self, Credential::OAuth { .. })
     }
-    
+
     /// Check if this is an API key credential
     #[inline]
     pub fn is_api_key(&self) -> bool {
@@ -123,7 +120,7 @@ impl AuthManager {
     pub fn new() -> Result<Self> {
         // Automatically detect if we should use file storage
         let use_file_storage = Self::should_use_file_storage();
-        
+
         let backend = if use_file_storage {
             // Use file storage silently - no need to warn the user
             StorageBackend::File(FileStore::new()?)
@@ -144,17 +141,17 @@ impl AuthManager {
         if std::env::var("BITBUCKET_USE_FILE_STORAGE").is_ok() {
             return true;
         }
-        
+
         // Detect WSL
         if Self::is_wsl() {
             return true;
         }
-        
+
         // Detect if in a container
         if Self::is_container() {
             return true;
         }
-        
+
         // Test if keyring actually works
         !Self::test_keyring()
     }
@@ -163,11 +160,13 @@ impl AuthManager {
     fn is_wsl() -> bool {
         // Check for WSL in /proc/version
         if let Ok(version) = std::fs::read_to_string("/proc/version") {
-            if version.to_lowercase().contains("microsoft") || version.to_lowercase().contains("wsl") {
+            if version.to_lowercase().contains("microsoft")
+                || version.to_lowercase().contains("wsl")
+            {
                 return true;
             }
         }
-        
+
         // Check WSL environment variables
         std::env::var("WSL_DISTRO_NAME").is_ok() || std::env::var("WSL_INTEROP").is_ok()
     }
@@ -178,14 +177,14 @@ impl AuthManager {
         if std::path::Path::new("/.dockerenv").exists() {
             return true;
         }
-        
+
         // Check for container in /proc/1/cgroup
         if let Ok(cgroup) = std::fs::read_to_string("/proc/1/cgroup") {
             if cgroup.contains("docker") || cgroup.contains("lxc") || cgroup.contains("kubepods") {
                 return true;
             }
         }
-        
+
         false
     }
 

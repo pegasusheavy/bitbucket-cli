@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use oauth2::basic::BasicClient;
 use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, 
-    RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl,
+    RefreshToken, Scope, TokenResponse, TokenUrl,
 };
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
@@ -31,13 +31,12 @@ async fn async_http_client(
     let headers = response.headers().to_owned();
     let body = response.bytes().await?.to_vec();
 
-    let mut builder = oauth2::http::Response::builder()
-        .status(status_code);
-    
+    let mut builder = oauth2::http::Response::builder().status(status_code);
+
     for (name, value) in headers.iter() {
         builder = builder.header(name, value);
     }
-    
+
     // Build the response - this should never fail with valid HTTP data
     Ok(builder.body(body).expect("Failed to build HTTP response"))
 }
@@ -69,7 +68,7 @@ impl OAuthFlow {
                 Err(_) => continue,
             }
         }
-        
+
         anyhow::bail!(
             "Could not bind to any preferred port. Tried: {:?}\n\n\
             Please ensure at least one of these ports is available:\n\
@@ -88,12 +87,12 @@ impl OAuthFlow {
         // Use a static port for OAuth callback (required by Bitbucket)
         // Try common ports in order: 8080, 3000, 8888, 9000
         const PREFERRED_PORTS: &[u16] = &[8080, 3000, 8888, 9000];
-        
+
         let (listener, port) = Self::bind_to_available_port(PREFERRED_PORTS)
             .context("Failed to bind callback server. Please ensure one of these ports is available: 8080, 3000, 8888, or 9000")?;
-        
+
         let redirect_url = format!("http://127.0.0.1:{}/callback", port);
-        
+
         println!("📡 Callback server listening on port {}", port);
         println!("   Make sure your OAuth consumer callback URL is set to:");
         println!("   {}", redirect_url);
@@ -247,7 +246,6 @@ Content-Type: text/html
             .set_client_secret(ClientSecret::new(self.client_secret.clone()))
             .set_auth_uri(AuthUrl::new(BITBUCKET_AUTH_URL.to_string())?)
             .set_token_uri(TokenUrl::new(BITBUCKET_TOKEN_URL.to_string())?);
-
 
         let token_response = client
             .exchange_refresh_token(&RefreshToken::new(refresh_token.to_string()))

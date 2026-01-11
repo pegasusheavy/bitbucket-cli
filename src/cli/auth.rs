@@ -94,10 +94,10 @@ impl AuthCommands {
                             println!("   ✓ Pull requests (Read, Write)");
                             println!("   ✓ Issues (Read, Write)");
                             println!("   ✓ Pipelines (Read, Write)");
-                            println!("4. Copy the Key (Client ID) and Secret");
-                            println!();
-                            
-                            Input::<String>::new()
+                           println!("4. Copy the Key (Client ID) and Secret");
+                           println!();
+
+                           Input::<String>::new()
                                 .with_prompt("OAuth Client ID (Key)")
                                 .interact_text()
                                 .ok()
@@ -153,9 +153,13 @@ impl AuthCommands {
                     // Show credential type
                     if let Ok(Some(credential)) = auth_manager.get_credentials() {
                         println!("  {} {}", "Method:".dimmed(), credential.type_name());
-                        
+
                         if credential.is_oauth() && credential.needs_refresh() {
-                            println!("  {} {}", "Status:".dimmed(), "Token needs refresh".yellow());
+                            println!(
+                                "  {} {}",
+                                "Status:".dimmed(),
+                                "Token needs refresh".yellow()
+                            );
                         }
                     }
 

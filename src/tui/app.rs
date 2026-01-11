@@ -2,9 +2,9 @@ use anyhow::Result;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
 use super::event::{Event, EventHandler};
@@ -224,17 +224,20 @@ impl App {
         if let (Some(client), Some(workspace)) = (&self.client, &self.workspace) {
             self.loading = true;
             self.pull_requests.clear();
-            
+
             // Load PRs from all repositories
             if let Ok(repos) = client.list_repositories(workspace, None, Some(50)).await {
                 for repo in repos.values {
                     let repo_slug = repo.slug.as_deref().unwrap_or(&repo.name);
-                    if let Ok(prs) = client.list_pull_requests(workspace, repo_slug, None, None, Some(10)).await {
+                    if let Ok(prs) = client
+                        .list_pull_requests(workspace, repo_slug, None, None, Some(10))
+                        .await
+                    {
                         self.pull_requests.extend(prs.values);
                     }
                 }
             }
-            
+
             self.clear_error();
             self.loading = false;
         } else {
@@ -248,17 +251,20 @@ impl App {
         if let (Some(client), Some(workspace)) = (&self.client, &self.workspace) {
             self.loading = true;
             self.issues.clear();
-            
+
             // Load issues from all repositories
             if let Ok(repos) = client.list_repositories(workspace, None, Some(50)).await {
                 for repo in repos.values {
                     let repo_slug = repo.slug.as_deref().unwrap_or(&repo.name);
-                    if let Ok(issues) = client.list_issues(workspace, repo_slug, None, None, Some(10)).await {
+                    if let Ok(issues) = client
+                        .list_issues(workspace, repo_slug, None, None, Some(10))
+                        .await
+                    {
                         self.issues.extend(issues.values);
                     }
                 }
             }
-            
+
             self.clear_error();
             self.loading = false;
         } else {
@@ -272,17 +278,20 @@ impl App {
         if let (Some(client), Some(workspace)) = (&self.client, &self.workspace) {
             self.loading = true;
             self.pipelines.clear();
-            
+
             // Load pipelines from all repositories
             if let Ok(repos) = client.list_repositories(workspace, None, Some(50)).await {
                 for repo in repos.values {
                     let repo_slug = repo.slug.as_deref().unwrap_or(&repo.name);
-                    if let Ok(pipelines) = client.list_pipelines(workspace, repo_slug, None, Some(10)).await {
+                    if let Ok(pipelines) = client
+                        .list_pipelines(workspace, repo_slug, None, Some(10))
+                        .await
+                    {
                         self.pipelines.extend(pipelines.values);
                     }
                 }
             }
-            
+
             self.clear_error();
             self.loading = false;
         } else {
@@ -338,7 +347,7 @@ pub async fn run_tui(workspace: Option<String>) -> Result<()> {
     if app.workspace.is_some() && app.client.is_some() {
         app.set_status("Loading data...");
         terminal.draw(|f| ui::draw(f, &app))?;
-        
+
         if let Err(e) = app.load_repositories().await {
             app.set_error(&format!("Failed to load data: {}", e));
         } else {
@@ -360,7 +369,7 @@ pub async fn run_tui(workspace: Option<String>) -> Result<()> {
             should_refresh = false;
             app.set_status("Refreshing...");
             terminal.draw(|f| ui::draw(f, &app))?;
-            
+
             match app.current_view {
                 View::Dashboard | View::Repositories => {
                     let _ = app.load_repositories().await;
@@ -375,7 +384,7 @@ pub async fn run_tui(workspace: Option<String>) -> Result<()> {
                     let _ = app.load_pipelines().await;
                 }
             }
-            
+
             app.set_status("Refreshed");
         }
 

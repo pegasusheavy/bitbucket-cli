@@ -1,10 +1,10 @@
 /// Repository browser view
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame,
 };
 
 use crate::models::Repository;
@@ -85,7 +85,11 @@ impl ReposView {
                 Line::from(""),
                 Line::from(vec![
                     Span::styled("Private: ", Style::default().fg(Color::DarkGray)),
-                    Span::raw(if repo.is_private.unwrap_or(false) { "Yes" } else { "No" }),
+                    Span::raw(if repo.is_private.unwrap_or(false) {
+                        "Yes"
+                    } else {
+                        "No"
+                    }),
                 ]),
                 Line::from(vec![
                     Span::styled("SCM: ", Style::default().fg(Color::DarkGray)),
@@ -136,7 +140,11 @@ impl ReposView {
     }
 
     fn repo_to_list_item(repo: &Repository) -> ListItem<'static> {
-        let private_badge = if repo.is_private.unwrap_or(false) { "🔒" } else { "🌐" };
+        let private_badge = if repo.is_private.unwrap_or(false) {
+            "🔒"
+        } else {
+            "🌐"
+        };
         let lang_badge = repo.language.as_deref().unwrap_or("");
 
         ListItem::new(Line::from(vec![

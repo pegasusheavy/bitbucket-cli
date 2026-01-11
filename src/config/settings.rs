@@ -7,7 +7,7 @@ const APP_NAME: &str = "bitbucket-cli";
 const CONFIG_FILE: &str = "config.toml";
 
 /// XDG Base Directory helper functions
-/// 
+///
 /// On Linux, these follow the XDG Base Directory Specification:
 /// - Config: `$XDG_CONFIG_HOME/bitbucket-cli` (default: `~/.config/bitbucket-cli`)
 /// - Data: `$XDG_DATA_HOME/bitbucket-cli` (default: `~/.local/share/bitbucket-cli`)
@@ -27,7 +27,7 @@ pub mod xdg {
     use super::*;
 
     /// Get the XDG config directory for the application
-    /// 
+    ///
     /// Respects `$XDG_CONFIG_HOME` on Linux (falls back to `~/.config`)
     pub fn config_dir() -> Result<PathBuf> {
         // First check for explicit XDG_CONFIG_HOME on Unix
@@ -37,14 +37,14 @@ pub mod xdg {
                 return Ok(PathBuf::from(xdg_config).join(APP_NAME));
             }
         }
-        
+
         dirs::config_dir()
             .map(|p| p.join(APP_NAME))
             .context("Could not determine config directory")
     }
 
     /// Get the XDG data directory for the application
-    /// 
+    ///
     /// Respects `$XDG_DATA_HOME` on Linux (falls back to `~/.local/share`)
     pub fn data_dir() -> Result<PathBuf> {
         #[cfg(unix)]
@@ -53,14 +53,14 @@ pub mod xdg {
                 return Ok(PathBuf::from(xdg_data).join(APP_NAME));
             }
         }
-        
+
         dirs::data_dir()
             .map(|p| p.join(APP_NAME))
             .context("Could not determine data directory")
     }
 
     /// Get the XDG cache directory for the application
-    /// 
+    ///
     /// Respects `$XDG_CACHE_HOME` on Linux (falls back to `~/.cache`)
     pub fn cache_dir() -> Result<PathBuf> {
         #[cfg(unix)]
@@ -69,14 +69,14 @@ pub mod xdg {
                 return Ok(PathBuf::from(xdg_cache).join(APP_NAME));
             }
         }
-        
+
         dirs::cache_dir()
             .map(|p| p.join(APP_NAME))
             .context("Could not determine cache directory")
     }
 
     /// Get the XDG state directory for the application
-    /// 
+    ///
     /// Respects `$XDG_STATE_HOME` on Linux (falls back to `~/.local/state`)
     /// On non-Linux platforms, falls back to data directory
     pub fn state_dir() -> Result<PathBuf> {
@@ -86,7 +86,7 @@ pub mod xdg {
                 return Ok(PathBuf::from(xdg_state).join(APP_NAME));
             }
         }
-        
+
         // dirs::state_dir() is available on Linux, falls back to data_dir on other platforms
         dirs::state_dir()
             .or_else(dirs::data_dir)
@@ -156,7 +156,7 @@ impl Default for DisplayConfig {
 
 impl Config {
     /// Get the configuration directory path (XDG compliant)
-    /// 
+    ///
     /// Returns `$XDG_CONFIG_HOME/bitbucket-cli` on Linux,
     /// or platform-appropriate equivalent on other systems.
     pub fn config_dir() -> Result<PathBuf> {
@@ -169,7 +169,7 @@ impl Config {
     }
 
     /// Get the data directory path (XDG compliant)
-    /// 
+    ///
     /// Returns `$XDG_DATA_HOME/bitbucket-cli` on Linux.
     /// Use this for persistent application data.
     pub fn data_dir() -> Result<PathBuf> {
@@ -177,7 +177,7 @@ impl Config {
     }
 
     /// Get the cache directory path (XDG compliant)
-    /// 
+    ///
     /// Returns `$XDG_CACHE_HOME/bitbucket-cli` on Linux.
     /// Use this for cached data that can be regenerated.
     pub fn cache_dir() -> Result<PathBuf> {
@@ -185,7 +185,7 @@ impl Config {
     }
 
     /// Get the state directory path (XDG compliant)
-    /// 
+    ///
     /// Returns `$XDG_STATE_HOME/bitbucket-cli` on Linux.
     /// Use this for state data like logs and history.
     pub fn state_dir() -> Result<PathBuf> {
