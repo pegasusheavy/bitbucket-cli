@@ -27,6 +27,7 @@ jobs:
   build-release:
     name: Build Release
     needs: create-release
+    if: always()
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -103,6 +104,7 @@ jobs:
   build-packages:
     name: Build Packages
     needs: create-release
+    if: always()
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -258,6 +260,7 @@ jobs:
   publish-crates:
     name: Publish to crates.io
     needs: build-release
+    if: success()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
