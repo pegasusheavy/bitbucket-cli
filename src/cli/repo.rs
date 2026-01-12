@@ -122,7 +122,7 @@ impl RepoCommands {
                             .chars()
                             .take(40)
                             .collect::<String>(),
-                        private: if r.is_private { "Yes" } else { "No" }.to_string(),
+                        private: if r.is_private.unwrap_or(false) { "Yes" } else { "No" }.to_string(),
                         updated: r
                             .updated_on
                             .map(|d| d.format("%Y-%m-%d").to_string())
@@ -172,9 +172,9 @@ impl RepoCommands {
                 println!(
                     "{} {}",
                     "Private:".dimmed(),
-                    if repository.is_private { "Yes" } else { "No" }
+                    if repository.is_private.unwrap_or(false) { "Yes" } else { "No" }
                 );
-                println!("{} {}", "SCM:".dimmed(), repository.scm);
+                println!("{} {}", "SCM:".dimmed(), repository.scm.as_deref().unwrap_or("unknown"));
 
                 if let Some(lang) = &repository.language {
                     if !lang.is_empty() {

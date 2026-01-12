@@ -17,9 +17,7 @@ Thumbs.db
 
 # Environment
 .env
-.env.local
-
-# Documentation site
+.env.local# Documentation site
 docs/node_modules/
 docs/dist/
 docs/.angular/

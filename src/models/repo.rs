@@ -8,10 +8,10 @@ pub struct Repository {
     pub uuid: String,
     pub name: String,
     pub full_name: String,
-    pub slug: String,
+    pub slug: Option<String>,
     pub description: Option<String>,
-    pub is_private: bool,
-    pub scm: String,
+    pub is_private: Option<bool>,
+    pub scm: Option<String>,
     pub owner: Option<User>,
     pub workspace: Option<Workspace>,
     pub project: Option<Project>,
@@ -24,12 +24,16 @@ pub struct Repository {
     pub fork_policy: Option<String>,
     pub mainbranch: Option<Branch>,
     pub links: Option<RepositoryLinks>,
+    #[serde(rename = "type")]
+    pub repo_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepositoryLinks {
+    #[serde(rename = "self")]
     pub self_link: Option<Link>,
     pub html: Option<Link>,
+    pub avatar: Option<Link>,
     pub clone: Option<Vec<CloneLink>>,
     pub pullrequests: Option<Link>,
     pub commits: Option<Link>,

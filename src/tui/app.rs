@@ -152,7 +152,7 @@ impl App {
                 self.handle_select();
             }
             KeyCode::Char('r') => {
-                self.set_status("Refreshing...");
+                // Refresh will be handled in main loop
             }
             _ => {}
         }
@@ -198,6 +198,107 @@ impl App {
     pub fn quit(&mut self) {
         self.running = false;
     }
+
+    /// Load repositories
+    pub async fn load_repositories(&mut self) -> Result<()> {
+        if let (Some(client), Some(workspace)) = (&self.client, &self.workspace) {
+            self.loading = true;
+            match client.list_repositories(workspace, None, Some(50)).await {
+                Ok(result) => {
+                    self.repositories = result.values;
+                    self.clear_error();
+                }
+                Err(e) => {
+                    self.set_error(&format!("Failed to load repositories: {}", e));
+                }
+            }
+            self.loading = false;
+        } else {
+            self.set_error("No workspace configured");
+        }
+        Ok(())
+    }
+
+    /// Load pull requests for the current workspace
+    pub async fn load_pull_requests(&mut self) -> Result<()> {
+        if let (Some(client), Some(workspace)) = (&self.client, &self.workspace) {
+            self.loading = true;
+            self.pull_requests.clear();
+            
+            // Load PRs from all repositories
+            if let Ok(repos) = client.list_repositories(workspace, None, Some(50)).await {
+                for repo in repos.values {
+                    let repo_slug = repo.slug.as_deref().unwrap_or(&repo.name);
+                    if let Ok(prs) = client.list_pull_requests(workspace, repo_slug, None, None, Some(10)).await {
+                        self.pull_requests.extend(prs.values);
+                    }
+                }
+            }
+            
+            self.clear_error();
+            self.loading = false;
+        } else {
+            self.set_error("No workspace configured");
+        }
+        Ok(())
+    }
+
+    /// Load issues for the current workspace
+    pub async fn load_issues(&mut self) -> Result<()> {
+        if let (Some(client), Some(workspace)) = (&self.client, &self.workspace) {
+            self.loading = true;
+            self.issues.clear();
+            
+            // Load issues from all repositories
+            if let Ok(repos) = client.list_repositories(workspace, None, Some(50)).await {
+                for repo in repos.values {
+                    let repo_slug = repo.slug.as_deref().unwrap_or(&repo.name);
+                    if let Ok(issues) = client.list_issues(workspace, repo_slug, None, None, Some(10)).await {
+                        self.issues.extend(issues.values);
+                    }
+                }
+            }
+            
+            self.clear_error();
+            self.loading = false;
+        } else {
+            self.set_error("No workspace configured");
+        }
+        Ok(())
+    }
+
+    /// Load pipelines for the current workspace
+    pub async fn load_pipelines(&mut self) -> Result<()> {
+        if let (Some(client), Some(workspace)) = (&self.client, &self.workspace) {
+            self.loading = true;
+            self.pipelines.clear();
+            
+            // Load pipelines from all repositories
+            if let Ok(repos) = client.list_repositories(workspace, None, Some(50)).await {
+                for repo in repos.values {
+                    let repo_slug = repo.slug.as_deref().unwrap_or(&repo.name);
+                    if let Ok(pipelines) = client.list_pipelines(workspace, repo_slug, None, Some(10)).await {
+                        self.pipelines.extend(pipelines.values);
+                    }
+                }
+            }
+            
+            self.clear_error();
+            self.loading = false;
+        } else {
+            self.set_error("No workspace configured");
+        }
+        Ok(())
+    }
+
+    /// Load all data
+    pub async fn load_all_data(&mut self) -> Result<()> {
+        self.load_repositories().await?;
+        self.load_pull_requests().await?;
+        self.load_issues().await?;
+        self.load_pipelines().await?;
+        Ok(())
+    }
 }
 
 impl Default for App {
@@ -224,6 +325,8 @@ pub async fn run_tui(workspace: Option<String>) -> Result<()> {
             app = app.with_client(client);
             if let Some(ws) = workspace {
                 app = app.with_workspace(ws);
+            } else {
+                app.set_error("No workspace specified. Use: bitbucket tui --workspace <workspace>");
             }
         }
         Err(e) => {
@@ -231,21 +334,62 @@ pub async fn run_tui(workspace: Option<String>) -> Result<()> {
         }
     }
 
+    // Load initial data if we have a workspace
+    if app.workspace.is_some() && app.client.is_some() {
+        app.set_status("Loading data...");
+        terminal.draw(|f| ui::draw(f, &app))?;
+        
+        if let Err(e) = app.load_repositories().await {
+            app.set_error(&format!("Failed to load data: {}", e));
+        } else {
+            app.set_status("Data loaded. Press 'r' to refresh.");
+        }
+    }
+
     // Create event handler
     let event_handler = EventHandler::new(250);
+    let mut should_refresh = false;
 
     // Main loop
     while app.running {
         // Draw UI
         terminal.draw(|f| ui::draw(f, &app))?;
 
+        // Handle refresh if requested
+        if should_refresh && app.workspace.is_some() && app.client.is_some() {
+            should_refresh = false;
+            app.set_status("Refreshing...");
+            terminal.draw(|f| ui::draw(f, &app))?;
+            
+            match app.current_view {
+                View::Dashboard | View::Repositories => {
+                    let _ = app.load_repositories().await;
+                }
+                View::PullRequests => {
+                    let _ = app.load_pull_requests().await;
+                }
+                View::Issues => {
+                    let _ = app.load_issues().await;
+                }
+                View::Pipelines => {
+                    let _ = app.load_pipelines().await;
+                }
+            }
+            
+            app.set_status("Refreshed");
+        }
+
         // Handle events
         match event_handler.next()? {
             Event::Key(key) => {
+                // Check if refresh was requested
+                if let crossterm::event::KeyCode::Char('r') = key.code {
+                    should_refresh = true;
+                }
                 app.handle_key(key);
             }
             Event::Tick => {
-                // Could refresh data here
+                // Periodic tick for animations, etc.
             }
             Event::Resize(_, _) => {
                 // Terminal will redraw automatically

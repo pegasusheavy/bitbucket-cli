@@ -40,10 +40,14 @@ pub struct PipelineSelector {
 pub struct PipelineCommit {
     pub hash: String,
     pub message: Option<String>,
+    #[serde(rename = "type")]
+    pub commit_type: Option<String>,
+    pub links: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PipelineTrigger {
+    pub name: Option<String>,
     #[serde(rename = "type")]
     pub trigger_type: String,
 }

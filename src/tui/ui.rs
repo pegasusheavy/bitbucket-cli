@@ -140,7 +140,7 @@ fn draw_repositories(f: &mut Frame, app: &App, area: Rect) {
         app.repositories
             .iter()
             .map(|repo| {
-                let private_badge = if repo.is_private { "🔒" } else { "🌐" };
+                let private_badge = if repo.is_private.unwrap_or(false) { "🔒" } else { "🌐" };
                 ListItem::new(Line::from(vec![
                     Span::raw(format!("{} ", private_badge)),
                     Span::styled(&repo.full_name, Style::default().fg(Color::Cyan)),
