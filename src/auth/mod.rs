@@ -114,6 +114,8 @@ enum StorageBackend {
 /// Authentication manager
 pub struct AuthManager {
     backend: StorageBackend,
+    /// Fallback file store if keyring operations fail at runtime
+    file_fallback: Option<FileStore>,
 }
 
 impl AuthManager {
@@ -121,18 +123,25 @@ impl AuthManager {
         // Automatically detect if we should use file storage
         let use_file_storage = Self::should_use_file_storage();
 
-        let backend = if use_file_storage {
+        let (backend, file_fallback) = if use_file_storage {
             // Use file storage silently - no need to warn the user
-            StorageBackend::File(FileStore::new()?)
+            (StorageBackend::File(FileStore::new()?), None)
         } else {
-            // Try keyring, but fall back to file if it fails
+            // Try keyring, but keep file fallback ready for runtime failures
             match KeyringStore::new() {
-                Ok(keyring) => StorageBackend::Keyring(keyring),
-                Err(_) => StorageBackend::File(FileStore::new()?),
+                Ok(keyring) => {
+                    // Pre-create file fallback in case keyring fails at runtime
+                    let fallback = FileStore::new().ok();
+                    (StorageBackend::Keyring(keyring), fallback)
+                }
+                Err(_) => (StorageBackend::File(FileStore::new()?), None),
             }
         };
 
-        Ok(Self { backend })
+        Ok(Self {
+            backend,
+            file_fallback,
+        })
     }
 
     /// Determine if we should use file storage instead of keyring
@@ -189,9 +198,11 @@ impl AuthManager {
     }
 
     /// Test if keyring is actually available and working
+    /// Uses the same service name as KeyringStore to ensure consistent behavior
     fn test_keyring() -> bool {
-        // Try to create a test entry
-        match keyring::Entry::new("bitbucket-cli-test", "test") {
+        // Use the same service name as KeyringStore, but a test-specific key
+        // This ensures we're testing the actual service permissions
+        match keyring::Entry::new("bitbucket-cli", "test-probe") {
             Ok(entry) => {
                 // Try to set and get a test value
                 if entry.set_password("test").is_ok() {
@@ -207,27 +218,65 @@ impl AuthManager {
     }
 
     /// Get stored credentials
+    /// Also checks file fallback if keyring returns nothing (for credentials stored during fallback)
     pub fn get_credentials(&self) -> Result<Option<Credential>> {
         match &self.backend {
-            StorageBackend::Keyring(store) => store.get_credential(),
+            StorageBackend::Keyring(store) => {
+                match store.get_credential() {
+                    Ok(Some(cred)) => Ok(Some(cred)),
+                    Ok(None) | Err(_) => {
+                        // Check file fallback in case credentials were stored there
+                        if let Some(ref file_store) = self.file_fallback {
+                            file_store.get_credential()
+                        } else {
+                            Ok(None)
+                        }
+                    }
+                }
+            }
             StorageBackend::File(store) => store.get_credential(),
         }
     }
 
     /// Store credentials
+    /// Falls back to file storage if keyring fails at runtime
     pub fn store_credentials(&self, credential: &Credential) -> Result<()> {
         match &self.backend {
-            StorageBackend::Keyring(store) => store.store_credential(credential),
+            StorageBackend::Keyring(store) => {
+                match store.store_credential(credential) {
+                    Ok(()) => Ok(()),
+                    Err(e) => {
+                        // Keyring failed at runtime - try file fallback
+                        if let Some(ref file_store) = self.file_fallback {
+                            eprintln!(
+                                "⚠️  Keyring storage failed ({}), falling back to file storage",
+                                e
+                            );
+                            file_store.store_credential(credential)
+                        } else {
+                            Err(e)
+                        }
+                    }
+                }
+            }
             StorageBackend::File(store) => store.store_credential(credential),
         }
     }
 
-    /// Clear stored credentials
+    /// Clear stored credentials from all storage locations
     pub fn clear_credentials(&self) -> Result<()> {
-        match &self.backend {
+        // Clear from primary backend
+        let primary_result = match &self.backend {
             StorageBackend::Keyring(store) => store.delete_credential(),
             StorageBackend::File(store) => store.delete_credential(),
+        };
+
+        // Also clear file fallback if it exists (in case credentials were stored there)
+        if let Some(ref file_store) = self.file_fallback {
+            let _ = file_store.delete_credential(); // Ignore errors for fallback cleanup
         }
+
+        primary_result
     }
 
     /// Check if authenticated
