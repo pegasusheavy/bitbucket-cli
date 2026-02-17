@@ -1,0 +1,52 @@
+# Bitbucket CLI
+
+> A powerful command-line interface for Bitbucket Cloud written in Rust
+
+A feature-rich CLI tool for managing Bitbucket Cloud resources directly from your terminal. It supports repository management, pull requests, issue tracking, CI/CD pipelines, and includes an interactive terminal UI (TUI) for visual browsing. Authentication supports OAuth 2.0 with secure keyring storage and API key fallback for CI/automation scenarios.
+
+## Links
+
+- [Documentation](https://pegasusheavy.github.io/bitbucket-cli/)
+- [GitHub Repository](https://github.com/pegasusheavy/bitbucket-cli)
+- [Crates.io Package](https://crates.io/crates/bitbucket-cli)
+
+## Key Features
+
+- Repository management: list, view, clone, create, fork, and delete repositories
+- Pull request workflows: create, review, merge, approve, and decline PRs
+- Issue tracking: create, view, comment on, close, and reopen issues
+- Pipeline management: trigger, monitor, and manage CI/CD pipelines
+- Interactive TUI mode with keyboard-driven navigation
+- Secure authentication via OAuth 2.0 (preferred) or API key fallback
+- Cross-platform: Linux (deb, rpm, Arch, Alpine), Windows (MSI), and from source
+
+## Installation
+
+```bash
+# Using Cargo (recommended)
+cargo install bitbucket-cli
+
+# From source
+git clone https://github.com/pegasusheavy/bitbucket-cli.git
+cd bitbucket-cli
+cargo install --path .
+```
+
+## Quick Start
+
+```bash
+# Authenticate with OAuth 2.0
+bitbucket auth login --oauth
+
+# List repositories
+bitbucket repo list myworkspace
+
+# List pull requests
+bitbucket pr list myworkspace/myrepo
+
+# Create a pull request
+bitbucket pr create myworkspace/myrepo --title "My PR" --source feature-branch
+
+# Launch interactive TUI
+bitbucket tui --workspace myworkspace
+```
