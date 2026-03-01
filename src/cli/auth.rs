@@ -74,9 +74,23 @@ impl AuthCommands {
                 };
 
                 let credential = if use_oauth {
-                    // OAuth flow
+                    // OAuth flow — resolve consumer credentials from (in priority):
+                    // 1. CLI flags
+                    // 2. Environment variables
+                    // 3. Previously stored credentials
+                    // 4. Interactive prompt (first-time only)
+                    let stored_consumer = auth_manager
+                        .get_credentials()
+                        .ok()
+                        .flatten()
+                        .and_then(|c| {
+                            c.oauth_consumer_credentials()
+                                .map(|(id, secret)| (id.to_owned(), secret.to_owned()))
+                        });
+
                     let client_id = client_id
                         .or_else(|| std::env::var("BITBUCKET_CLIENT_ID").ok())
+                        .or_else(|| stored_consumer.as_ref().map(|(id, _)| id.clone()))
                         .or_else(|| {
                             println!();
                             println!("📋 OAuth Consumer Setup Required");
@@ -106,6 +120,7 @@ impl AuthCommands {
 
                     let client_secret = client_secret
                         .or_else(|| std::env::var("BITBUCKET_CLIENT_SECRET").ok())
+                        .or_else(|| stored_consumer.map(|(_, secret)| secret))
                         .or_else(|| {
                             Input::<String>::new()
                                 .with_prompt("OAuth Client Secret")

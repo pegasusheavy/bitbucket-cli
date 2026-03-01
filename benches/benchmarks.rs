@@ -231,6 +231,8 @@ fn bench_auth_header(c: &mut Criterion) {
         access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ".to_string(),
         refresh_token: Some("refresh_token_value".to_string()),
         expires_at: Some(chrono::Utc::now().timestamp() + 3600),
+        client_id: Some("test_client_id".to_string()),
+        client_secret: Some("test_client_secret".to_string()),
     };
 
     let api_key = Credential::ApiKey {

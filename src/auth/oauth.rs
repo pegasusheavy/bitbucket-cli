@@ -158,6 +158,8 @@ impl OAuthFlow {
             access_token,
             refresh_token,
             expires_at,
+            client_id: Some(self.client_id.clone()),
+            client_secret: Some(self.client_secret.clone()),
         };
 
         // Store credentials
@@ -266,6 +268,8 @@ Content-Type: text/html
             access_token,
             refresh_token: Some(new_refresh_token),
             expires_at,
+            client_id: Some(self.client_id.clone()),
+            client_secret: Some(self.client_secret.clone()),
         };
 
         auth_manager.store_credentials(&credential)?;

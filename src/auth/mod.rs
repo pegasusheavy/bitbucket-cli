@@ -20,6 +20,11 @@ pub enum Credential {
         access_token: String,
         refresh_token: Option<String>,
         expires_at: Option<i64>,
+        /// Persisted OAuth consumer credentials for re-authentication
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        client_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        client_secret: Option<String>,
     },
     /// Bitbucket API key (fallback for automation/CI)
     /// Note: App passwords are deprecated by Atlassian
@@ -102,6 +107,18 @@ impl Credential {
     #[inline]
     pub fn is_api_key(&self) -> bool {
         matches!(self, Credential::ApiKey { .. })
+    }
+
+    /// Get stored OAuth consumer credentials (client_id, client_secret)
+    pub fn oauth_consumer_credentials(&self) -> Option<(&str, &str)> {
+        match self {
+            Credential::OAuth {
+                client_id: Some(id),
+                client_secret: Some(secret),
+                ..
+            } => Some((id, secret)),
+            _ => None,
+        }
     }
 }
 
