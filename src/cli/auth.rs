@@ -1,28 +1,20 @@
 use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
-use dialoguer::{Confirm, Input};
+use dialoguer::Input;
 
-use crate::auth::{ApiKeyAuth, AuthManager, OAuthFlow};
+use crate::auth::{AuthManager, OAuthFlow};
 use crate::config::Config;
 
 #[derive(Subcommand)]
 pub enum AuthCommands {
-    /// Authenticate with Bitbucket (OAuth 2.0 preferred)
+    /// Authenticate with Bitbucket via OAuth 2.0
     Login {
-        /// Use OAuth 2.0 authentication (recommended)
-        #[arg(long)]
-        oauth: bool,
-
-        /// Use API key authentication (for automation/CI)
-        #[arg(long)]
-        api_key: bool,
-
-        /// OAuth Client ID (required for OAuth)
+        /// OAuth Client ID
         #[arg(long, env = "BITBUCKET_CLIENT_ID")]
         client_id: Option<String>,
 
-        /// OAuth Client Secret (required for OAuth)
+        /// OAuth Client Secret
         #[arg(long, env = "BITBUCKET_CLIENT_SECRET")]
         client_secret: Option<String>,
     },
@@ -38,110 +30,65 @@ impl AuthCommands {
     pub async fn run(self) -> Result<()> {
         match self {
             AuthCommands::Login {
-                oauth,
-                api_key,
                 client_id,
                 client_secret,
             } => {
                 let auth_manager = AuthManager::new()?;
 
-                // Determine authentication method
-                let use_oauth = if oauth || api_key {
-                    // User explicitly chose a method
-                    oauth
-                } else {
-                    // Interactive prompt - prefer OAuth
-                    println!("\n🔐 Bitbucket CLI Authentication");
-                    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-                    println!();
-                    println!("Choose authentication method:");
-                    println!();
-                    println!("  1. {} (Recommended)", "OAuth 2.0".green().bold());
-                    println!("     • More secure with token refresh");
-                    println!("     • Better user experience");
-                    println!("     • Requires OAuth app setup");
-                    println!();
-                    println!("  2. {} (Fallback)", "API Key".yellow());
-                    println!("     • For automation/CI pipelines");
-                    println!("     • Requires HTTP access token");
-                    println!("     • No automatic refresh");
-                    println!();
+                // Resolve consumer credentials from (in priority):
+                // 1. CLI flags / env vars
+                // 2. Previously stored credentials
+                // 3. Interactive prompt (first-time only)
+                let stored_consumer = auth_manager
+                    .get_credentials()
+                    .ok()
+                    .flatten()
+                    .and_then(|c| {
+                        c.oauth_consumer_credentials()
+                            .map(|(id, secret)| (id.to_owned(), secret.to_owned()))
+                    });
 
-                    Confirm::new()
-                        .with_prompt("Use OAuth 2.0?")
-                        .default(true)
-                        .interact()?
-                };
+                let client_id = client_id
+                    .or_else(|| stored_consumer.as_ref().map(|(id, _)| id.clone()))
+                    .or_else(|| {
+                        println!();
+                        println!("📋 OAuth Consumer Setup Required");
+                        println!();
+                        println!("To use OAuth authentication, create an OAuth consumer in Bitbucket:");
+                        println!("1. Go to: https://bitbucket.org/[workspace]/workspace/settings/oauth-consumers/new");
+                        println!("2. Set callback URL to ONE of these (pick any available port):");
+                        println!("   • http://127.0.0.1:8080/callback");
+                        println!("   • http://127.0.0.1:3000/callback");
+                        println!("   • http://127.0.0.1:8888/callback");
+                        println!("   • http://127.0.0.1:9000/callback");
+                        println!("3. Select required permissions:");
+                        println!("   ✓ Account (Read)");
+                        println!("   ✓ Repositories (Read)");
+                        println!("   ✓ Pull requests (Read, Write)");
+                        println!("   ✓ Issues (Read, Write)");
+                        println!("   ✓ Pipelines (Read, Write)");
+                        println!("4. Copy the Key (Client ID) and Secret");
+                        println!();
 
-                let credential = if use_oauth {
-                    // OAuth flow — resolve consumer credentials from (in priority):
-                    // 1. CLI flags
-                    // 2. Environment variables
-                    // 3. Previously stored credentials
-                    // 4. Interactive prompt (first-time only)
-                    let stored_consumer = auth_manager
-                        .get_credentials()
-                        .ok()
-                        .flatten()
-                        .and_then(|c| {
-                            c.oauth_consumer_credentials()
-                                .map(|(id, secret)| (id.to_owned(), secret.to_owned()))
-                        });
+                        Input::<String>::new()
+                            .with_prompt("OAuth Client ID (Key)")
+                            .interact_text()
+                            .ok()
+                    })
+                    .ok_or_else(|| anyhow::anyhow!("OAuth Client ID is required"))?;
 
-                    let client_id = client_id
-                        .or_else(|| std::env::var("BITBUCKET_CLIENT_ID").ok())
-                        .or_else(|| stored_consumer.as_ref().map(|(id, _)| id.clone()))
-                        .or_else(|| {
-                            println!();
-                            println!("📋 OAuth Consumer Setup Required");
-                            println!();
-                            println!("To use OAuth authentication, you need to create an OAuth consumer:");
-                            println!("1. Go to: https://bitbucket.org/[workspace]/workspace/settings/oauth-consumers/new");
-                            println!("2. Set callback URL to ONE of these (pick any available port):");
-                            println!("   • http://127.0.0.1:8080/callback");
-                            println!("   • http://127.0.0.1:3000/callback");
-                            println!("   • http://127.0.0.1:8888/callback");
-                            println!("   • http://127.0.0.1:9000/callback");
-                            println!("3. Select required permissions:");
-                            println!("   ✓ Account (Read)");
-                            println!("   ✓ Repositories (Read)");
-                            println!("   ✓ Pull requests (Read, Write)");
-                            println!("   ✓ Issues (Read, Write)");
-                            println!("   ✓ Pipelines (Read, Write)");
-                           println!("4. Copy the Key (Client ID) and Secret");
-                           println!();
+                let client_secret = client_secret
+                    .or_else(|| stored_consumer.map(|(_, secret)| secret))
+                    .or_else(|| {
+                        Input::<String>::new()
+                            .with_prompt("OAuth Client Secret")
+                            .interact_text()
+                            .ok()
+                    })
+                    .ok_or_else(|| anyhow::anyhow!("OAuth Client Secret is required"))?;
 
-                           Input::<String>::new()
-                                .with_prompt("OAuth Client ID (Key)")
-                                .interact_text()
-                                .ok()
-                        })
-                        .ok_or_else(|| anyhow::anyhow!("OAuth Client ID is required"))?;
-
-                    let client_secret = client_secret
-                        .or_else(|| std::env::var("BITBUCKET_CLIENT_SECRET").ok())
-                        .or_else(|| stored_consumer.map(|(_, secret)| secret))
-                        .or_else(|| {
-                            Input::<String>::new()
-                                .with_prompt("OAuth Client Secret")
-                                .interact_text()
-                                .ok()
-                        })
-                        .ok_or_else(|| anyhow::anyhow!("OAuth Client Secret is required"))?;
-
-                    let oauth = OAuthFlow::new(client_id, client_secret);
-                    oauth.authenticate(&auth_manager).await?
-                } else {
-                    // API Key flow
-                    ApiKeyAuth::authenticate(&auth_manager).await?
-                };
-
-                // Save username to config if available
-                if let Some(username) = credential.username() {
-                    let mut config = Config::load()?;
-                    config.set_username(username);
-                    config.save()?;
-                }
+                let oauth = OAuthFlow::new(client_id, client_secret);
+                oauth.authenticate(&auth_manager).await?;
 
                 Ok(())
             }
@@ -163,17 +110,14 @@ impl AuthCommands {
                 let config = Config::load()?;
 
                 if auth_manager.is_authenticated() {
-                    println!("{} Authenticated", "✓".green());
+                    println!("{} Authenticated via OAuth 2.0", "✓".green());
 
-                    // Show credential type
                     if let Ok(Some(credential)) = auth_manager.get_credentials() {
-                        println!("  {} {}", "Method:".dimmed(), credential.type_name());
-
-                        if credential.is_oauth() && credential.needs_refresh() {
+                        if credential.needs_refresh() {
                             println!(
                                 "  {} {}",
                                 "Status:".dimmed(),
-                                "Token needs refresh".yellow()
+                                "Token needs refresh (will auto-refresh on next use)".yellow()
                             );
                         }
                     }
@@ -186,7 +130,6 @@ impl AuthCommands {
                         println!("  {} {}", "Workspace:".dimmed(), workspace);
                     }
 
-                    // Test the credentials
                     match crate::api::BitbucketClient::from_stored().await {
                         Ok(client) => match client.get::<serde_json::Value>("/user").await {
                             Ok(user) => {
@@ -210,8 +153,6 @@ impl AuthCommands {
                     println!("{} Not authenticated", "✗".red());
                     println!();
                     println!("Run {} to authenticate", "bitbucket auth login".cyan());
-                    println!();
-                    println!("💡 Tip: Use {} for the best experience", "--oauth".green());
                 }
 
                 Ok(())
