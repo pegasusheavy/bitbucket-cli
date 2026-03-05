@@ -36,3 +36,4 @@ packaging/arch/src/
 packaging/arch/*.tar.gz
 packaging/alpine/src/
 packaging/alpine/pkg/
+.claude/
