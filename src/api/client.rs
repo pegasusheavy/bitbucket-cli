@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use reqwest::{Client, Response, StatusCode};
 use serde::de::DeserializeOwned;
 
-use crate::auth::{AuthManager, Credential};
+use crate::auth::{AuthManager, Credential, OAuthFlow};
 use crate::models::Paginated;
 
 const API_BASE_URL: &str = "https://api.bitbucket.org/2.0";
@@ -30,12 +30,34 @@ impl BitbucketClient {
         self.credential.auth_header()
     }
 
-    /// Create a client from stored credentials
-    pub fn from_stored() -> Result<Self> {
+    /// Create a client from stored credentials, automatically refreshing if needed
+    pub async fn from_stored() -> Result<Self> {
         let auth_manager = AuthManager::new()?;
         let credential = auth_manager
             .get_credentials()?
             .context("Not authenticated. Run 'bitbucket auth login' first.")?;
+
+        // Auto-refresh if the token is expiring soon and we have everything needed
+        let credential = if credential.needs_refresh() {
+            if let (
+                Credential::OAuth {
+                    refresh_token: Some(refresh_token),
+                    ..
+                },
+                Some((client_id, client_secret)),
+            ) = (&credential, credential.oauth_consumer_credentials())
+            {
+                let flow = OAuthFlow::new(client_id.to_string(), client_secret.to_string());
+                match flow.refresh_token(&auth_manager, refresh_token).await {
+                    Ok(refreshed) => refreshed,
+                    Err(_) => credential, // Fall back to existing credential if refresh fails
+                }
+            } else {
+                credential
+            }
+        } else {
+            credential
+        };
 
         Self::new(credential)
     }

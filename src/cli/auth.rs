@@ -187,7 +187,7 @@ impl AuthCommands {
                     }
 
                     // Test the credentials
-                    match crate::api::BitbucketClient::from_stored() {
+                    match crate::api::BitbucketClient::from_stored().await {
                         Ok(client) => match client.get::<serde_json::Value>("/user").await {
                             Ok(user) => {
                                 if let Some(display_name) = user.get("display_name") {

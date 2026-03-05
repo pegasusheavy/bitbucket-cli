@@ -329,7 +329,7 @@ pub async fn run_tui(workspace: Option<String>) -> Result<()> {
     let mut app = App::new();
 
     // Try to get API client
-    match BitbucketClient::from_stored() {
+    match BitbucketClient::from_stored().await {
         Ok(client) => {
             app = app.with_client(client);
             if let Some(ws) = workspace {

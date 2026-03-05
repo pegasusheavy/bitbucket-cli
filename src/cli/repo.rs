@@ -100,7 +100,7 @@ impl RepoCommands {
     pub async fn run(self) -> Result<()> {
         match self {
             RepoCommands::List { workspace, limit } => {
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
                 let repos = client
                     .list_repositories(&workspace, None, Some(limit))
                     .await?;
@@ -150,7 +150,7 @@ impl RepoCommands {
 
             RepoCommands::View { repo, web } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
                 let repository = client.get_repository(&workspace, &repo_slug).await?;
 
                 if web {
@@ -229,7 +229,7 @@ impl RepoCommands {
 
             RepoCommands::Clone { repo, dir } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
                 let repository = client.get_repository(&workspace, &repo_slug).await?;
 
                 let clone_url = repository
@@ -265,7 +265,7 @@ impl RepoCommands {
                 public,
                 project,
             } => {
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let slug = name.to_lowercase().replace(' ', "-");
 
@@ -303,7 +303,7 @@ impl RepoCommands {
                 name,
             } => {
                 let (src_workspace, src_repo) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let forked = client
                     .fork_repository(
@@ -338,7 +338,7 @@ impl RepoCommands {
                     }
                 }
 
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
                 client.delete_repository(&workspace, &repo_slug).await?;
 
                 println!("{} Deleted repository {}", "✓".green(), repo);

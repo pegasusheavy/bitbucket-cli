@@ -177,7 +177,7 @@ impl IssueCommands {
         match self {
             IssueCommands::List { repo, state, limit } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let issues = client
                     .list_issues(
@@ -214,7 +214,7 @@ impl IssueCommands {
 
             IssueCommands::View { repo, id, web } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
                 let issue = client.get_issue(&workspace, &repo_slug, id).await?;
 
                 if web {
@@ -298,7 +298,7 @@ impl IssueCommands {
                 priority,
             } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let request = CreateIssueRequest {
                     title,
@@ -328,7 +328,7 @@ impl IssueCommands {
 
             IssueCommands::Comment { repo, id, body } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 client
                     .add_issue_comment(&workspace, &repo_slug, id, &body)
@@ -341,7 +341,7 @@ impl IssueCommands {
 
             IssueCommands::Close { repo, id } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 client
                     .update_issue(
@@ -361,7 +361,7 @@ impl IssueCommands {
 
             IssueCommands::Reopen { repo, id } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 client
                     .update_issue(

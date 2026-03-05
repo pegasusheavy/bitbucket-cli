@@ -190,7 +190,7 @@ impl PrCommands {
         match self {
             PrCommands::List { repo, state, limit } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let prs = client
                     .list_pull_requests(
@@ -227,7 +227,7 @@ impl PrCommands {
 
             PrCommands::View { repo, id, web } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
                 let pr = client.get_pull_request(&workspace, &repo_slug, id).await?;
 
                 if web {
@@ -315,7 +315,7 @@ impl PrCommands {
                 close_source_branch,
             } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let request = CreatePullRequestRequest {
                     title,
@@ -353,7 +353,7 @@ impl PrCommands {
                 close_source_branch,
             } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let request = MergePullRequestRequest {
                     merge_type: Some("pullrequest".to_string()),
@@ -373,7 +373,7 @@ impl PrCommands {
 
             PrCommands::Approve { repo, id } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 client
                     .approve_pull_request(&workspace, &repo_slug, id)
@@ -386,7 +386,7 @@ impl PrCommands {
 
             PrCommands::Decline { repo, id } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 client
                     .decline_pull_request(&workspace, &repo_slug, id)
@@ -399,7 +399,7 @@ impl PrCommands {
 
             PrCommands::Checkout { repo, id } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let pr = client.get_pull_request(&workspace, &repo_slug, id).await?;
                 let branch = &pr.source.branch.name;
@@ -443,7 +443,7 @@ impl PrCommands {
 
             PrCommands::Diff { repo, id } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let diff = client.get_pr_diff(&workspace, &repo_slug, id).await?;
                 println!("{}", diff);
@@ -453,7 +453,7 @@ impl PrCommands {
 
             PrCommands::Comment { repo, id, body } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 client
                     .add_pr_comment(&workspace, &repo_slug, id, &body)

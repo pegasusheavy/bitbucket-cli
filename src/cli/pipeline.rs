@@ -81,7 +81,7 @@ impl PipelineCommands {
         match self {
             PipelineCommands::List { repo, limit } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let pipelines = client
                     .list_pipelines(&workspace, &repo_slug, None, Some(limit))
@@ -125,7 +125,7 @@ impl PipelineCommands {
 
             PipelineCommands::View { repo, build, logs } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let pipeline = client
                     .get_pipeline_by_build_number(&workspace, &repo_slug, build)
@@ -242,7 +242,7 @@ impl PipelineCommands {
                 wait,
             } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let request = if let Some(pipeline_name) = pipeline {
                     TriggerPipelineRequest::for_branch_with_pipeline(&branch, &pipeline_name)
@@ -329,7 +329,7 @@ impl PipelineCommands {
 
             PipelineCommands::Stop { repo, build } => {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
-                let client = BitbucketClient::from_stored()?;
+                let client = BitbucketClient::from_stored().await?;
 
                 let pipeline = client
                     .get_pipeline_by_build_number(&workspace, &repo_slug, build)
