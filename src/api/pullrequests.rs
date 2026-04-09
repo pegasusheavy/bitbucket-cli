@@ -162,6 +162,21 @@ impl BitbucketClient {
         self.get(&path).await
     }
 
+    /// Get a specific comment on a pull request
+    pub async fn get_pr_comment(
+        &self,
+        workspace: &str,
+        repo_slug: &str,
+        pr_id: u64,
+        comment_id: u64,
+    ) -> Result<PullRequestComment> {
+        let path = format!(
+            "/repositories/{}/{}/pullrequests/{}/comments/{}",
+            workspace, repo_slug, pr_id, comment_id
+        );
+        self.get(&path).await
+    }
+
     /// Add a comment to a pull request
     pub async fn add_pr_comment(
         &self,
