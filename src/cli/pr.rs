@@ -146,6 +146,19 @@ pub enum PrCommands {
         #[arg(short, long, default_value = "25")]
         limit: u32,
     },
+
+    /// View a specific comment on a pull request
+    ViewComment {
+        /// Repository in format workspace/repo-slug
+        repo: String,
+
+        /// Pull request ID
+        #[arg(value_name = "PR_ID")]
+        id: u64,
+
+        /// Comment ID
+        comment_id: u64,
+    },
 }
 
 #[derive(ValueEnum, Clone)]
@@ -525,6 +538,66 @@ impl PrCommands {
 
                 let table = Table::new(rows).to_string();
                 println!("{}", table);
+
+                Ok(())
+            }
+
+            PrCommands::ViewComment {
+                repo,
+                id,
+                comment_id,
+            } => {
+                let (workspace, repo_slug) = parse_repo(&repo)?;
+                let client = BitbucketClient::from_stored().await?;
+
+                let comment = client
+                    .get_pr_comment(&workspace, &repo_slug, id, comment_id)
+                    .await?;
+
+                println!(
+                    "{} #{} on PR #{}",
+                    "Comment".bold(),
+                    comment.id,
+                    id
+                );
+                println!("{}", "─".repeat(60));
+
+                println!("{} {}", "Author:".dimmed(), comment.user.display_name);
+                println!(
+                    "{} {}",
+                    "Created:".dimmed(),
+                    comment.created_on.format("%Y-%m-%d %H:%M")
+                );
+
+                if let Some(updated) = comment.updated_on {
+                    println!(
+                        "{} {}",
+                        "Updated:".dimmed(),
+                        updated.format("%Y-%m-%d %H:%M")
+                    );
+                }
+
+                if let Some(inline) = &comment.inline {
+                    let line = inline.to.or(inline.from);
+                    let location = match line {
+                        Some(l) => format!("{}:{}", inline.path, l),
+                        None => inline.path.clone(),
+                    };
+                    println!("{} {}", "Type:".dimmed(), "inline");
+                    println!("{} {}", "File:".dimmed(), location.cyan());
+                } else {
+                    println!("{} {}", "Type:".dimmed(), "general");
+                }
+
+                println!();
+                println!("{}", comment.content.raw);
+
+                if let Some(links) = &comment.links {
+                    if let Some(html) = &links.html {
+                        println!();
+                        println!("{} {}", "URL:".dimmed(), html.href.cyan());
+                    }
+                }
 
                 Ok(())
             }
