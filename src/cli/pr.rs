@@ -133,6 +133,19 @@ pub enum PrCommands {
         #[arg(short, long)]
         body: String,
     },
+
+    /// List comments on a pull request
+    ListComments {
+        /// Repository in format workspace/repo-slug
+        repo: String,
+
+        /// Pull request ID
+        id: u64,
+
+        /// Number of results
+        #[arg(short, long, default_value = "25")]
+        limit: u32,
+    },
 }
 
 #[derive(ValueEnum, Clone)]
@@ -183,6 +196,20 @@ struct PrRow {
     state: String,
     #[tabled(rename = "UPDATED")]
     updated: String,
+}
+
+#[derive(Tabled)]
+struct CommentRow {
+    #[tabled(rename = "ID")]
+    id: u64,
+    #[tabled(rename = "AUTHOR")]
+    author: String,
+    #[tabled(rename = "CREATED")]
+    created: String,
+    #[tabled(rename = "TYPE")]
+    comment_type: String,
+    #[tabled(rename = "CONTENT")]
+    content: String,
 }
 
 impl PrCommands {
@@ -460,6 +487,44 @@ impl PrCommands {
                     .await?;
 
                 println!("{} Added comment to pull request #{}", "✓".green(), id);
+
+                Ok(())
+            }
+
+            PrCommands::ListComments { repo, id, limit } => {
+                let (workspace, repo_slug) = parse_repo(&repo)?;
+                let client = BitbucketClient::from_stored().await?;
+
+                let comments = client
+                    .list_pr_comments(&workspace, &repo_slug, id)
+                    .await?;
+
+                let mut values: Vec<_> = comments.values.into_iter().take(limit as usize).collect();
+
+                if values.is_empty() {
+                    println!("No comments found");
+                    return Ok(());
+                }
+
+                values.sort_by_key(|c| c.created_on);
+
+                let rows: Vec<CommentRow> = values
+                    .iter()
+                    .map(|c| CommentRow {
+                        id: c.id,
+                        author: c.user.display_name.clone(),
+                        created: c.created_on.format("%Y-%m-%d %H:%M").to_string(),
+                        comment_type: if c.inline.is_some() {
+                            "inline".to_string()
+                        } else {
+                            "general".to_string()
+                        },
+                        content: c.content.raw.chars().take(50).collect(),
+                    })
+                    .collect();
+
+                let table = Table::new(rows).to_string();
+                println!("{}", table);
 
                 Ok(())
             }
