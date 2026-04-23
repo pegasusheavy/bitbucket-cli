@@ -508,9 +508,7 @@ impl PrCommands {
                 let (workspace, repo_slug) = parse_repo(&repo)?;
                 let client = BitbucketClient::from_stored().await?;
 
-                let comments = client
-                    .list_pr_comments(&workspace, &repo_slug, id)
-                    .await?;
+                let comments = client.list_pr_comments(&workspace, &repo_slug, id).await?;
 
                 let mut values: Vec<_> = comments.values.into_iter().take(limit as usize).collect();
 
@@ -554,12 +552,7 @@ impl PrCommands {
                     .get_pr_comment(&workspace, &repo_slug, id, comment_id)
                     .await?;
 
-                println!(
-                    "{} #{} on PR #{}",
-                    "Comment".bold(),
-                    comment.id,
-                    id
-                );
+                println!("{} #{} on PR #{}", "Comment".bold(), comment.id, id);
                 println!("{}", "─".repeat(60));
 
                 println!("{} {}", "Author:".dimmed(), comment.user.display_name);
@@ -583,10 +576,10 @@ impl PrCommands {
                         Some(l) => format!("{}:{}", inline.path, l),
                         None => inline.path.clone(),
                     };
-                    println!("{} {}", "Type:".dimmed(), "inline");
+                    println!("{} inline", "Type:".dimmed());
                     println!("{} {}", "File:".dimmed(), location.cyan());
                 } else {
-                    println!("{} {}", "Type:".dimmed(), "general");
+                    println!("{} general", "Type:".dimmed());
                 }
 
                 println!();

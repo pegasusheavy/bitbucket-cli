@@ -51,14 +51,10 @@ impl AuthCommands {
                 // 1. CLI flags / env vars
                 // 2. Previously stored credentials
                 // 3. Interactive prompt (first-time only)
-                let stored_consumer = auth_manager
-                    .get_credentials()
-                    .ok()
-                    .flatten()
-                    .and_then(|c| {
-                        c.oauth_consumer_credentials()
-                            .map(|(id, secret)| (id.to_owned(), secret.to_owned()))
-                    });
+                let stored_consumer = auth_manager.get_credentials().ok().flatten().and_then(|c| {
+                    c.oauth_consumer_credentials()
+                        .map(|(id, secret)| (id.to_owned(), secret.to_owned()))
+                });
 
                 let client_id = client_id
                     .or_else(|| stored_consumer.as_ref().map(|(id, _)| id.clone()))
