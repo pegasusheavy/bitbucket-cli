@@ -3,18 +3,22 @@ use clap::Subcommand;
 use colored::Colorize;
 use dialoguer::Input;
 
-use crate::auth::{AuthManager, OAuthFlow};
+use crate::auth::{ApiKeyAuth, AuthManager, OAuthFlow};
 use crate::config::Config;
 
 #[derive(Subcommand)]
 pub enum AuthCommands {
-    /// Authenticate with Bitbucket via OAuth 2.0
+    /// Authenticate with Bitbucket (OAuth 2.0 or API key)
     Login {
-        /// OAuth Client ID
+        /// Use API key authentication (for automation/CI)
+        #[arg(long)]
+        api_key: bool,
+
+        /// OAuth Client ID (for OAuth authentication)
         #[arg(long, env = "BITBUCKET_CLIENT_ID")]
         client_id: Option<String>,
 
-        /// OAuth Client Secret
+        /// OAuth Client Secret (for OAuth authentication)
         #[arg(long, env = "BITBUCKET_CLIENT_SECRET")]
         client_secret: Option<String>,
     },
@@ -30,11 +34,19 @@ impl AuthCommands {
     pub async fn run(self) -> Result<()> {
         match self {
             AuthCommands::Login {
+                api_key,
                 client_id,
                 client_secret,
             } => {
                 let auth_manager = AuthManager::new()?;
 
+                // If --api-key flag is set, use API key authentication
+                if api_key {
+                    ApiKeyAuth::authenticate(&auth_manager).await?;
+                    return Ok(());
+                }
+
+                // Otherwise, use OAuth 2.0 authentication
                 // Resolve consumer credentials from (in priority):
                 // 1. CLI flags / env vars
                 // 2. Previously stored credentials
@@ -110,9 +122,18 @@ impl AuthCommands {
                 let config = Config::load()?;
 
                 if auth_manager.is_authenticated() {
-                    println!("{} Authenticated via OAuth 2.0", "✓".green());
+                    println!("{} Authenticated", "✓".green());
 
                     if let Ok(Some(credential)) = auth_manager.get_credentials() {
+                        println!("  {} {}", "Method:".dimmed(), credential.type_name());
+
+                        // Show username from credential for API keys, or config for OAuth
+                        if let Some(username) = credential.username() {
+                            println!("  {} {}", "Username:".dimmed(), username);
+                        } else if let Some(username) = config.username() {
+                            println!("  {} {}", "Username:".dimmed(), username);
+                        }
+
                         if credential.needs_refresh() {
                             println!(
                                 "  {} {}",
@@ -120,10 +141,6 @@ impl AuthCommands {
                                 "Token needs refresh (will auto-refresh on next use)".yellow()
                             );
                         }
-                    }
-
-                    if let Some(username) = config.username() {
-                        println!("  {} {}", "Username:".dimmed(), username);
                     }
 
                     if let Some(workspace) = config.default_workspace() {
