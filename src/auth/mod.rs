@@ -1,17 +1,21 @@
+pub mod api_key;
 pub mod file_store;
 pub mod keyring_store;
 pub mod oauth;
 
 use anyhow::Result;
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 
+pub use api_key::*;
 pub use file_store::*;
 pub use keyring_store::*;
 pub use oauth::*;
 
-/// OAuth 2.0 credential
+/// Credential types for Bitbucket authentication
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Credential {
+    /// OAuth 2.0 credentials (preferred method)
     OAuth {
         access_token: String,
         refresh_token: Option<String>,
@@ -21,6 +25,8 @@ pub enum Credential {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         client_secret: Option<String>,
     },
+    /// API Key / HTTP Access Token (for automation/CI)
+    ApiKey { username: String, api_key: String },
 }
 
 impl Credential {
@@ -34,13 +40,24 @@ impl Credential {
                 result.push_str(access_token);
                 result
             }
+            Credential::ApiKey { username, api_key } => {
+                let basic = format!("{}:{}", username, api_key);
+                let encoded = base64::engine::general_purpose::STANDARD.encode(basic.as_bytes());
+                let mut result = String::with_capacity(6 + encoded.len());
+                result.push_str("Basic ");
+                result.push_str(&encoded);
+                result
+            }
         }
     }
 
     /// Get the credential type name for display
     #[inline]
     pub fn type_name(&self) -> &'static str {
-        "OAuth 2.0"
+        match self {
+            Credential::OAuth { .. } => "OAuth 2.0",
+            Credential::ApiKey { .. } => "API Key",
+        }
     }
 
     /// Check if the credential needs refresh
@@ -66,6 +83,14 @@ impl Credential {
                 client_secret: Some(secret),
                 ..
             } => Some((id, secret)),
+            _ => None,
+        }
+    }
+
+    /// Get username (only available for API key credentials)
+    pub fn username(&self) -> Option<&str> {
+        match self {
+            Credential::ApiKey { username, .. } => Some(username),
             _ => None,
         }
     }
