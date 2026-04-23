@@ -98,10 +98,10 @@ fn create_sample_repository() -> Repository {
         uuid: "{12345678-1234-1234-1234-123456789abc}".to_string(),
         name: "my-repo".to_string(),
         full_name: "workspace/my-repo".to_string(),
-        slug: "my-repo".to_string(),
+        slug: Some("my-repo".to_string()),
         description: Some("A sample repository".to_string()),
-        is_private: true,
-        scm: "git".to_string(),
+        is_private: Some(true),
+        scm: Some("git".to_string()),
         owner: None,
         workspace: None,
         project: None,
@@ -117,6 +117,7 @@ fn create_sample_repository() -> Repository {
             branch_type: Some("branch".to_string()),
         }),
         links: None,
+        repo_type: Some("repository".to_string()),
     }
 }
 
@@ -321,10 +322,10 @@ fn bench_payload_sizes(c: &mut Criterion) {
                 uuid: format!("{{uuid-{}}}", i),
                 name: format!("repo-{}", i),
                 full_name: format!("workspace/repo-{}", i),
-                slug: format!("repo-{}", i),
+                slug: Some(format!("repo-{}", i)),
                 description: Some(format!("Description for repo {}", i)),
-                is_private: i % 2 == 0,
-                scm: "git".to_string(),
+                is_private: Some(i % 2 == 0),
+                scm: Some("git".to_string()),
                 owner: None,
                 workspace: None,
                 project: None,
@@ -337,6 +338,7 @@ fn bench_payload_sizes(c: &mut Criterion) {
                 fork_policy: None,
                 mainbranch: None,
                 links: None,
+                repo_type: Some("repository".to_string()),
             })
             .collect();
 
