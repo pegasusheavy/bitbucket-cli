@@ -57,6 +57,10 @@ pub enum RepoCommands {
         /// Project key to add repository to
         #[arg(short, long)]
         project: Option<String>,
+
+        /// Fork policy: allow_forks, no_public_forks, no_forks (default: allow_forks when --public, no_public_forks otherwise)
+        #[arg(long)]
+        fork_policy: Option<String>,
     },
 
     /// Fork a repository
@@ -264,10 +268,19 @@ impl RepoCommands {
                 description,
                 public,
                 project,
+                fork_policy,
             } => {
                 let client = BitbucketClient::from_stored().await?;
 
                 let slug = name.to_lowercase().replace(' ', "-");
+
+                let resolved_fork_policy = fork_policy.unwrap_or_else(|| {
+                    if public {
+                        "allow_forks".to_string()
+                    } else {
+                        "no_public_forks".to_string()
+                    }
+                });
 
                 let request = CreateRepositoryRequest {
                     scm: "git".to_string(),
@@ -275,6 +288,7 @@ impl RepoCommands {
                     description,
                     is_private: Some(!public),
                     project: project.map(|key| crate::models::ProjectKey { key }),
+                    fork_policy: Some(resolved_fork_policy),
                     ..Default::default()
                 };
 
