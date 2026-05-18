@@ -98,7 +98,7 @@ impl PipelineCommands {
                     .map(|p| {
                         let duration = if let Some(seconds) = p.build_seconds_used {
                             format_duration(seconds)
-                        } else if p.state.name == PipelineStateName::Building {
+                        } else if p.state.name == PipelineStateName::InProgress {
                             "running...".to_string()
                         } else {
                             "-".to_string()
@@ -361,7 +361,7 @@ fn parse_repo(repo: &str) -> Result<(String, String)> {
 fn format_status(state: &PipelineStateName, result: Option<&PipelineResultName>) -> String {
     match state {
         PipelineStateName::Pending => "PENDING".yellow().to_string(),
-        PipelineStateName::Building => "RUNNING".blue().to_string(),
+        PipelineStateName::InProgress => "RUNNING".blue().to_string(),
         PipelineStateName::Paused => "PAUSED".yellow().to_string(),
         PipelineStateName::Halted => "HALTED".red().to_string(),
         PipelineStateName::Completed => {

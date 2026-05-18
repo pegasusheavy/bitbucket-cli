@@ -144,7 +144,7 @@ impl DashboardView {
         let running_pipelines = app
             .pipelines
             .iter()
-            .filter(|p| p.state.name == crate::models::PipelineStateName::Building)
+            .filter(|p| p.state.name == crate::models::PipelineStateName::InProgress)
             .count();
         let pipelines_stat = Paragraph::new(vec![
             Line::from(Span::styled(

@@ -266,7 +266,7 @@ fn draw_pipelines(f: &mut Frame, app: &App, area: Rect) {
             .map(|pipeline| {
                 let (status_icon, status_color) = match pipeline.state.name {
                     crate::models::PipelineStateName::Pending => ("⏳", Color::Yellow),
-                    crate::models::PipelineStateName::Building => ("🔄", Color::Blue),
+                    crate::models::PipelineStateName::InProgress => ("🔄", Color::Blue),
                     crate::models::PipelineStateName::Completed => {
                         if let Some(result) = &pipeline.state.result {
                             match result.name {

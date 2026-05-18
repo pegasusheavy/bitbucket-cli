@@ -65,7 +65,8 @@ pub struct PipelineState {
 #[serde(rename_all = "UPPERCASE")]
 pub enum PipelineStateName {
     Pending,
-    Building,
+    #[serde(rename = "IN_PROGRESS")]
+    InProgress,
     Completed,
     Halted,
     Paused,
@@ -75,7 +76,7 @@ impl std::fmt::Display for PipelineStateName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PipelineStateName::Pending => write!(f, "PENDING"),
-            PipelineStateName::Building => write!(f, "BUILDING"),
+            PipelineStateName::InProgress => write!(f, "IN_PROGRESS"),
             PipelineStateName::Completed => write!(f, "COMPLETED"),
             PipelineStateName::Halted => write!(f, "HALTED"),
             PipelineStateName::Paused => write!(f, "PAUSED"),
