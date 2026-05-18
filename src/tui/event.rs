@@ -35,21 +35,16 @@ impl EventHandler {
                 // Poll for events with timeout
                 if event::poll(tick_rate).unwrap_or(false) {
                     match event::read() {
-                        Ok(event::Event::Key(key)) => {
-                            if tx.send(Event::Key(key)).is_err() {
-                                break;
-                            }
+                        Ok(event::Event::Key(key)) if tx.send(Event::Key(key)).is_err() => {
+                            break;
                         }
-                        Ok(event::Event::Mouse(mouse)) => {
-                            if tx.send(Event::Mouse(mouse)).is_err() {
-                                break;
-                            }
+                        Ok(event::Event::Mouse(mouse)) if tx.send(Event::Mouse(mouse)).is_err() => {
+                            break;
                         }
-                        Ok(event::Event::Resize(w, h)) => {
-                            if tx.send(Event::Resize(w, h)).is_err() {
-                                break;
-                            }
+                        Ok(event::Event::Resize(w, h)) if tx.send(Event::Resize(w, h)).is_err() => {
+                            break;
                         }
+                        Ok(_) => {}
                         _ => {}
                     }
                 } else {
