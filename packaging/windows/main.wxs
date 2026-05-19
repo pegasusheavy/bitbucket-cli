@@ -5,7 +5,7 @@
     <Package
         Name="Bitbucket CLI"
         Manufacturer="Pegasus Heavy Industries"
-        Version="0.3.17"
+        Version="0.3.18"
         UpgradeCode="12345678-1234-1234-1234-123456789012"
         Scope="perMachine"
         InstallerVersion="450"
@@ -69,7 +69,6 @@
         <Property Id="ARPHELPLINK" Value="https://github.com/pegasusheavy/bitbucket-cli" />
 
         <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="APPLICATIONFOLDER" />
-        <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
 
     </Package>
 </Wix>
