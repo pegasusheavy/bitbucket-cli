@@ -6,7 +6,7 @@
         UpgradeCode='12345678-1234-1234-1234-123456789012'
         Manufacturer='Pegasus Heavy Industries'
         Language='1033'
-        Version='0.3.14'>
+        Version='0.3.15'>
 
         <Package
             Id='*'
