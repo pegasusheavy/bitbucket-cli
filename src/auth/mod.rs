@@ -1,4 +1,5 @@
 pub mod api_key;
+pub mod credential_store;
 pub mod file_store;
 pub mod keyring_store;
 pub mod oauth;
@@ -8,6 +9,7 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 
 pub use api_key::*;
+pub use credential_store::*;
 pub use file_store::*;
 pub use keyring_store::*;
 pub use oauth::*;
@@ -96,15 +98,15 @@ impl Credential {
     }
 }
 
-/// Authentication manager - uses file-based credential storage
+/// Authentication manager - uses the platform secret store with file fallback
 pub struct AuthManager {
-    store: FileStore,
+    store: CredentialStore,
 }
 
 impl AuthManager {
     pub fn new() -> Result<Self> {
         Ok(Self {
-            store: FileStore::new()?,
+            store: CredentialStore::new()?,
         })
     }
 

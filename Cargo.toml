@@ -1,6 +1,6 @@
 [package]
 name = "bitbucket-cli"
-version = "0.3.13"
+version = "0.3.14"
 edition = "2024"
 rust-version = "1.85"
 description = "A powerful command-line interface for Bitbucket Cloud - manage repos, PRs, issues, and pipelines from your terminal with OAuth 2.0"
@@ -40,7 +40,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Authentication
-keyring = "3"
 oauth2 = "5"
 
 # Configuration
@@ -62,6 +61,15 @@ chrono = { version = "0.4", features = ["serde"] }
 open = "5"
 dialoguer = "0.11"
 url = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["windows-native"] }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

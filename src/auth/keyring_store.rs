@@ -6,7 +6,8 @@ use super::Credential;
 const SERVICE_NAME: &str = "bitbucket-cli";
 const CREDENTIAL_KEY: &str = "credentials";
 
-/// Secure credential storage using system keyring
+/// Secure credential storage using the platform secret store
+/// (macOS Keychain, Windows Credential Manager, freedesktop Secret Service).
 pub struct KeyringStore {
     entry: Entry,
 }
@@ -56,10 +57,4 @@ impl KeyringStore {
             )),
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    // Note: Keyring tests require a system keyring to be available
-    // and may not work in all CI environments
 }
