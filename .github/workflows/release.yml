@@ -230,7 +230,7 @@ jobs:
       - name: Install WiX
         if: matrix.package_type == 'msi'
         run: |
-          dotnet tool install --global wix
+          dotnet tool install --global wix --version 6.0.6
           wix extension add -g WixToolset.UI.wixext
 
       - name: Build Windows binary
